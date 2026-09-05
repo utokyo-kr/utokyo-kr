@@ -255,6 +255,17 @@
     padding-left:12px;border-left:1px solid #e3dcc9;font-size:13px;color:#6f6a5c;}
   .bulk .bulkgrade select{font-family:inherit;font-size:13px;padding:3px 6px;
     border:1px solid #ded6c2;border-radius:5px;background:#fff;}
+
+  /* 앨범에서 단 얼굴 — 그림을 새로 만들지 않고 그 자리만 잘라 보입니다 */
+  .mface { display:inline-block; width:30px; height:30px; border-radius:50%;
+    background-repeat:no-repeat; border:1px solid var(--line, #e5e0d5);
+    vertical-align:middle; margin-right:7px; background-color:#f2efe6; }
+  /* 등급 칸 — 「운영진 지정」 단추가 세로로 쪼개져 칸을 넓히던 것을 막습니다.
+     그 바람에 오른쪽 「직장·직급」이 화면 밖으로 밀려나 있었습니다. */
+  #tbl td.gcell{white-space:nowrap;}
+  #tbl td.gcell .btn.sm.adm{white-space:nowrap;display:inline-block;margin-top:3px;}
+  #tbl td.gcell .gsel{max-width:88px;}
+  #tbl td.gcell .pend{white-space:normal;max-width:150px;}
 </style>
 </head>
 <body>
@@ -454,6 +465,40 @@ if (!me || !me.is_admin) {
 function esc(s){ return (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 async function start() {
+  /* ── 앨범에서 단 얼굴 ──
+     auth/photo_faces.sql 을 돌려 두셨으면, 앨범 사진에서 이 회원에게 단
+     얼굴이 이름 옆에 뜹니다. 그림을 새로 만들지 않고 원본 사진의 그
+     자리만 잘라 보입니다 — 이름을 고치면 여기도 함께 바뀝니다. */
+  let FACES = new Map();
+  async function loadFaces() {
+    try {
+      const r = await sb.rpc("member_faces");
+      if (r.error) return;                       // SQL 을 아직 안 돌리셨으면 조용히
+      (r.data || []).forEach((f) => FACES.set(f.profile_id, f));
+    } catch (e) { /* 없어도 명단은 그대로 */ }
+  }
+  /* 네모 자리(0~1)를 「그 자리만 보이게」 하는 배경 값으로 */
+  function faceTag(id) {
+    const f = FACES.get(id);
+    if (!f || !f.box || !f.image_url) return "";
+    const b = typeof f.box === "string" ? JSON.parse(f.box) : f.box;
+    if (!b || !(b.w > 0) || !(b.h > 0)) return "";
+    const p = 0.25;                              // 둘레를 조금 넉넉히
+    let x = b.x - b.w * p, y = b.y - b.h * p;
+    let w = b.w * (1 + p * 2), h = b.h * (1 + p * 2);
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > 1) w = 1 - x;
+    if (y + h > 1) h = 1 - y;
+    w = Math.max(0.01, w); h = Math.max(0.01, h);
+    const sx = (100 / w).toFixed(2), sy = (100 / h).toFixed(2);
+    const px = (w >= 1 ? 50 : (x / (1 - w)) * 100).toFixed(2);
+    const py = (h >= 1 ? 50 : (y / (1 - h)) * 100).toFixed(2);
+    return '<span class="mface" title="앨범 사진에서" style="background-image:url(' +
+      esc(f.image_url) + ');background-size:' + sx + '% ' + sy +
+      '%;background-position:' + px + '% ' + py + '%"></span>';
+  }
+
   let rows = [], filter = "all", orgF = "all";
   let majorF = "";        // 전공 계열 그래프에서 고른 계열
   let sortKey = "name", sortDir = 1;                // 처음에는 이름 가나다순
@@ -501,6 +546,7 @@ async function start() {
       return;
     }
     rows = data || [];
+    await loadFaces();                 // 앨범에서 단 얼굴 (없으면 조용히 넘어갑니다)
     render(); refreshEmails();
   }
 
@@ -780,7 +826,7 @@ async function start() {
       list.map((r, i) => `<tr data-id="${r.id}">
         <td><input type="checkbox" class="chk"></td>
         <td class="no">${i + 1}</td>
-        <td>${esc(r.name) || "-"}${r.is_admin ? ' <span class="chip ob">운영진</span>' : ""}</td>
+        <td>${faceTag(r.id)}${esc(r.name) || "-"}${r.is_admin ? ' <span class="chip ob">운영진</span>' : ""}</td>
         <td class="em">${esc(r.email) || "-"}</td>
         <td class="em">${r.phone ? `<a href="tel:${esc(String(r.phone).replace(/[^0-9+]/g, ""))}">${esc(phoneText(r.phone))}</a>` : "-"}</td>
         <td>${r.member_type ? `<span class="chip ${r.member_type === "YB" ? "yb" : r.member_type === "GUEST" ? "wait" : "ob"}">${r.member_type === "GUEST" ? "비동문" : r.member_type}</span>` : "-"}</td>

@@ -1,8 +1,8 @@
 // ─── 게시판 글쓰기 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/OB/auth/auth.js";
-import { applyNav } from "/OB/board/nav.js?v=317";
-import { boardInfo, tagInfo } from "/OB/board/board-info.js?v=317";
+import { applyNav } from "/OB/board/nav.js?v=318";
+import { boardInfo, tagInfo } from "/OB/board/board-info.js?v=318";
 
 export async function initWrite(ORG) {
   const HOME = ORG === "YB" ? "/YB" : "/OB";
@@ -177,12 +177,17 @@ export async function initWrite(ORG) {
 
     function drawFiles() {
       if (!flist) return;
+      /* 파일 이름은 글쓴이가 정한 값입니다. 그대로 꽂으면
+         이름에 넣은 태그가 살아나므로 반드시 걸러서 넣습니다. */
+      const fesc = (s) => String(s == null ? "" : s)
+        .replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;",
+                                     '"': "&quot;", "'": "&#39;" }[c]));
       const rows = files.map((f, i) =>
-        `<div class="fitem"><span class="fn">${f.name}</span>` +
+        `<div class="fitem"><span class="fn">${fesc(f.name)}</span>` +
         `<span class="fs">${sizeText(f.size || 0)}</span>` +
         `<button type="button" class="fx" data-k="old" data-i="${i}" title="빼기">✕</button></div>`)
         .concat(picked.map((f, i) =>
-        `<div class="fitem"><span class="fn">${f.name}</span>` +
+        `<div class="fitem"><span class="fn">${fesc(f.name)}</span>` +
         `<span class="fs">${sizeText(f.size)}</span>` +
         `<button type="button" class="fx" data-k="new" data-i="${i}" title="빼기">✕</button></div>`));
       flist.innerHTML = rows.join("");

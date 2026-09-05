@@ -1389,7 +1389,7 @@
 
 <script type="module">
 
-import { initCalendar } from "/YB/board/calendar.js?v=317";
+import { initCalendar } from "/YB/board/calendar.js?v=318";
 
 // ─── 일정 달력 ───
 initCalendar("#calTop", { mode: "mini", upcoming: false, titles: true });
@@ -1505,7 +1505,7 @@ try {
 
 // 역대 회장 및 임원진 — 회장 목록과 게시판 모양의 명단 자료
 try {
-  const { initCouncil } = await import("/YB/council.js?v=317");
+  const { initCouncil } = await import("/YB/council.js?v=318");
   await initCouncil();
 } catch (e) { /* 자료를 불러오지 못해도 나머지 화면은 그대로 */ }
 
@@ -1535,7 +1535,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/YB/board/nav.js?v=317";
+  import { applyMenu } from "/YB/board/nav.js?v=318";
   applyMenu("YB");
 </script>
 </body>

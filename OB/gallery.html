@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <title>갤러리 | 재한 도쿄대학 총동문회</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/OB/board/board.css?v=317">
+<link rel="stylesheet" href="/OB/board/board.css?v=318">
 <style>
   /* 상단바·메뉴·배너를 사진 열과 같은 폭으로 (기본 960px → 1180px) */
   .topbar .inner,.mhead .inner,.banner .binner{max-width:1180px;padding-left:24px;padding-right:24px;}
@@ -151,7 +151,7 @@
        (cover 로 하면 좁은 화면에서 옆으로 당겨져 사람 다리가 잘렸습니다) */
     /* 게시판 배너와 같은 5.66:1 — 좌우로 넓힌 그림이라 한 점도 안 잘린다 */
     background:linear-gradient(rgba(8,14,24,.44),rgba(8,14,24,.08) 52%,rgba(8,14,24,.18)),
-               url('/OB/images/ob_gallery_wide.jpg?v=317') center/contain no-repeat,
+               url('/OB/images/ob_gallery_wide.jpg?v=318') center/contain no-repeat,
                #16212e;
     aspect-ratio:3804/576;height:auto;min-height:88px;
     display:flex;flex-direction:column;justify-content:flex-start;
@@ -303,10 +303,10 @@
   </div>
 </div>
 
-<script src="gallery-data.js?v=317"></script>
+<script src="gallery-data.js?v=318"></script>
 <script type="module">
 import { sb, currentUser, myProfile } from "/OB/auth/auth.js";
-import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=317";
+import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=318";
 
 let cur = new URLSearchParams(location.search).get("cat") || "assembly";
 if (cur !== "all" && !CATS.some(c => c[0] === cur)) cur = "assembly";
@@ -823,7 +823,7 @@ function setupNewAlbum(user, me) {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/OB/board/nav.js?v=317";
+  import { applyMenu } from "/OB/board/nav.js?v=318";
   applyMenu("OB");
 </script>
 </body>

@@ -149,6 +149,55 @@
   .ph .like:hover{background:rgba(20,24,34,.75);}
   .ph .like.on{background:rgba(179,69,59,.85);}
   .ph .like .n{font-variant-numeric:tabular-nums;}
+
+  /* ── 사진 속 얼굴에 이름 ──
+     회원은 커서를 얹으면 이름이 뜨고, 운영진은 네모를 둘러 이름을 답니다. */
+  #lbstage { position:relative; max-width:1180px; width:100%; }
+  .ftlayer { position:absolute; inset:0; pointer-events:none; }
+  .ftbox { position:absolute; border:2px solid rgba(255,255,255,.55);
+    border-radius:3px; pointer-events:auto; transition:.14s; }
+  .ftbox .ftname { position:absolute; left:50%; bottom:-1.7em;
+    transform:translateX(-50%); white-space:nowrap; font-size:12px;
+    font-weight:600; color:#fff; background:rgba(20,20,20,.82);
+    border-radius:4px; padding:2px 8px; opacity:0; transition:.14s;
+    pointer-events:none; }
+  .ftbox:hover { border-color:#ffd66b; background:rgba(255,214,107,.14); }
+  .ftbox:hover .ftname { opacity:1; }
+  /* 이름 다는 중에는 네모와 이름이 늘 보입니다 */
+  .ft-on .ftbox { border-color:#ffd66b; }
+  .ft-on .ftbox .ftname { opacity:1; }
+  .ftdel { position:absolute; top:-9px; right:-9px; width:20px; height:20px;
+    border:0; border-radius:50%; background:#b3453b; color:#fff; cursor:pointer;
+    font-size:11px; line-height:20px; padding:0; }
+  .ftsel { position:absolute; border:2px dashed #ffd66b;
+    background:rgba(255,214,107,.18); pointer-events:none; }
+  .ft-on #lbimg { cursor:crosshair; }
+
+  .ftbar { position:absolute; left:0; top:-42px; }
+  .ftgo { border:1px solid rgba(255,255,255,.4); background:rgba(0,0,0,.45);
+    color:#fff; border-radius:999px; padding:6px 14px; font:inherit;
+    font-size:13px; cursor:pointer; }
+  .ftgo:hover { background:rgba(0,0,0,.7); }
+  .ftask { position:absolute; left:0; right:0; bottom:-118px;
+    background:#fff; border-radius:8px; padding:10px 12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3); z-index:6; }
+  .ftask .ftq { width:100%; padding:8px 11px; border:1px solid #ddd;
+    border-radius:6px; font:inherit; }
+  .fthits { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;
+    max-height:96px; overflow:auto; }
+  .fthit { border:1px solid #ddd; background:#fff; border-radius:999px;
+    padding:4px 11px; font:inherit; font-size:13px; cursor:pointer; }
+  .fthit:hover { border-color:#8a6d2b; }
+  .fthit em { font-style:normal; font-size:11px; color:#999; margin-left:5px; }
+  .ftnone { font-size:12.5px; color:#888; }
+  .ftcancel { margin-top:8px; border:0; background:none; color:#888;
+    font:inherit; font-size:12.5px; cursor:pointer; }
+  .ftmsg { position:absolute; left:0; bottom:-30px; font-size:12.5px;
+    color:#ffe9a8; }
+  @media (max-width:640px) {
+    .ftask { bottom:auto; top:100%; }
+    .ftbar { top:-38px; }
+  }
 </style>
 </head>
 <body>
@@ -219,17 +268,20 @@
   <button class="x" id="lbx">닫기 ✕</button>
   <button class="nav prev" id="lbp">‹</button>
   <button class="nav next" id="lbn">›</button>
-  <div style="max-width:1180px;width:100%;">
+  <div id="lbstage">
     <img id="lbimg" src="" alt="">
     <div class="cap" id="lbcap"></div>
+    <p class="ftmsg" id="ftmsg"></p>
   </div>
 </div>
 
-<script src="gallery-data.js?v=317"></script>
+<script src="gallery-data.js?v=318"></script>
 <script type="module">
-import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=317";
+import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=318";
 import { sb, currentUser, myProfile, noteActivity } from "/OB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/OB/auth/likes.js";
+import { mountFaces } from "./face-tag.js?v=318";
+const ORG = "OB";
 {
   const q = new URLSearchParams(location.search);
   const cat = q.get("cat") || "assembly";
@@ -384,7 +436,46 @@ import { loadLikes, toggleLike, heart } from "/OB/auth/likes.js";
       (p.ownerAdmin ? " · 관리자" : p.ownerName ? ` · 공유자(${p.ownerName})` : "") +
       `  (${idx + 1} / ${album.photos.length})`;
     lb.classList.add("on");
+    showFaces(p);
   }
+
+  /* ── 사진 속 얼굴에 이름 ──
+     회원은 커서를 얹으면 이름이 뜨고, 운영진은 네모를 둘러 이름을 답니다.
+     붙박이 사진(자료방에 없는 것)은 이름을 달 수 없습니다. */
+  let faceMe = null, faceMembers = null;
+  async function showFaces(p) {
+    const stage = document.getElementById("lbstage");
+    const msg = document.getElementById("ftmsg");
+    if (msg) msg.textContent = "";
+    if (faceMe === null) {
+      try { const u = await currentUser(); faceMe = u ? (await myProfile()) : false; }
+      catch (e) { faceMe = false; }
+    }
+    if (!faceMe || !(faceMe.approved || faceMe.is_admin)) return;
+    if (faceMe.is_admin && faceMembers === null) {
+      try {
+        const r = await sb.from("member_directory")
+          .select("name,member_type,faculty,grad_year").order("name");
+        faceMembers = (r.data || []).map((m) => ({
+          id: null, name: m.name, faculty: m.faculty, grad_year: m.grad_year,
+        }));
+      } catch (e) { faceMembers = []; }
+    }
+    /* 그림이 다 뜬 뒤에 얹어야 자리가 맞습니다 */
+    if (!img.complete || !img.naturalWidth) {
+      await new Promise((ok) => { img.onload = ok; img.onerror = ok; });
+    }
+    try {
+      await mountFaces({
+        sb: sb, stage: stage, img: img,
+        photoId: (p && p.kind === "db") ? p.id : "",
+        org: ORG, isAdmin: !!faceMe.is_admin,
+        members: faceMembers || [],
+        say: (t) => { if (msg) msg.textContent = t; },
+      });
+    } catch (e) { /* 얼굴을 못 얹어도 사진은 그대로 보입니다 */ }
+  }
+
   grid.querySelectorAll(".ph").forEach(p => p.addEventListener("click", () => open(+p.dataset.i)));
   document.getElementById("lbx").addEventListener("click", () => lb.classList.remove("on"));
   document.getElementById("lbp").addEventListener("click", e => { e.stopPropagation(); open(idx - 1); });

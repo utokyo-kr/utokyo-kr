@@ -2,9 +2,9 @@
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/OB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/OB/auth/likes.js";
-import { applyNav } from "/OB/board/nav.js?v=317";
-import { boardTags } from "/OB/board/board-info.js?v=317";
-import { findDates } from "/OB/board/calendar.js?v=317";
+import { applyNav } from "/OB/board/nav.js?v=318";
+import { boardTags } from "/OB/board/board-info.js?v=318";
+import { findDates } from "/OB/board/calendar.js?v=318";
 
 /** 글자를 화면에 안전하게 넣기 위한 다듬기 */
 function esc(t) {

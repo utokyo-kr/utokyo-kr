@@ -1,7 +1,7 @@
 // ─── 학생회 「역대 회장 및 임원진」 화면 ────────────────────────
 // 위쪽에는 역대 회장 목록, 아래쪽에는 기존 홈페이지처럼 게시판 모양의
 // 역대 임원진 자료 목록을 놓습니다. 명단은 회원께만 보여드립니다.
-import { ROSTERS } from "/YB/council-data.js?v=317";
+import { ROSTERS } from "/YB/council-data.js?v=318";
 import { currentUser } from "/YB/auth/auth.js";
 
 const esc = (t) => String(t == null ? "" : t)
