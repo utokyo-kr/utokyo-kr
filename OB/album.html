@@ -217,6 +217,18 @@
   .ahead .rbtn.ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
     color:#fff;}
   .ahead .rbtn.ghost:hover{background:rgba(255,255,255,.2);}
+  /* 사진마다 설명 고치기 */
+  .ph .capedit{position:absolute;top:8px;right:40px;width:26px;height:26px;
+    border:none;border-radius:6px;background:rgba(0,0,0,.55);color:#fff;
+    font-size:13px;cursor:pointer;display:none;}
+  .ph:hover .capedit{display:block;}
+  .ph .capedit:hover{background:#8a6d2b;}
+  .ph .cap{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 8px;
+    font-size:12px;line-height:1.5;color:#fff;text-align:left;
+    background:linear-gradient(transparent,rgba(0,0,0,.72));
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .amsg.err{color:#b3453b;font-weight:600;}
+  .amsg.ok{color:#2a7a45;font-weight:600;}
 </style>
 </head>
 <body>
@@ -307,12 +319,12 @@
   </div>
 </div>
 
-<script src="gallery-data.js?v=321"></script>
+<script src="gallery-data.js?v=322"></script>
 <script type="module">
-import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=321";
+import { CATS, CAT_NAME, loadGallery } from "./gallery-lib.js?v=322";
 import { sb, currentUser, myProfile, noteActivity } from "/OB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/OB/auth/likes.js";
-import { mountFaces } from "./face-tag.js?v=321";
+import { mountFaces } from "./face-tag.js?v=322";
 const ORG = "OB";
 {
   const q = new URLSearchParams(location.search);
@@ -354,12 +366,47 @@ const ORG = "OB";
        <input type="checkbox" class="pick" title="선택">
        <span class="covmark">★ 대표사진</span>
        <button class="rm" title="사진 내리기">✕</button>
+       <button class="capedit" title="설명 고치기">✎</button>
        <img src="${p.thumb}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
        ${p.ownerAdmin ? '<span class="own">관리자</span>'
           : (p.ownerName ? `<span class="own">공유자(${esc(p.ownerName)})</span>` : "")}
+       ${p.cap ? `<span class="cap">${esc(p.cap)}</span>` : ""}
        <span class="dt">${(p.date || "").replace(/-/g, ".")}</span>
        ${p.id ? `<button class="like" type="button" data-ref="${p.id}">${heart(false)}<span class="n"></span></button>` : ""}
      </div>`).join("");
+
+
+  /* ── 사진 설명 고치기 ───────────────────────────
+     올린 분과 운영진만. ✎ 를 누르면 그 자리에서 고칩니다. */
+  grid.querySelectorAll(".capedit").forEach((b) => {
+    const tile = b.closest(".ph");
+    const ph = album.photos[+tile.dataset.i];
+    const mine = !!(ph && ph.owner && user && ph.owner === user.id);
+    if (!(isAdmin || mine) || !ph || ph.kind !== "db") { b.remove(); return; }
+    b.addEventListener("click", async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const now = ph.cap || "";
+      const text = prompt("이 사진의 설명을 적어주세요." + String.fromCharCode(10) + "(비우면 설명이 지워집니다)", now);
+      if (text === null) return;
+      const v = text.trim();
+      b.disabled = true;
+      const { error } = await sb.from("gallery_photos")
+        .update({ caption: v || null }).eq("id", ph.id);
+      b.disabled = false;
+      if (error) { alert("설명을 저장하지 못했습니다: " + error.message); return; }
+      ph.cap = v;
+      let el = tile.querySelector(".cap");
+      if (v) {
+        if (!el) {
+          el = document.createElement("span");
+          el.className = "cap";
+          tile.insertBefore(el, tile.querySelector(".dt"));
+        }
+        el.textContent = v;
+      } else if (el) el.remove();
+      tile.title = v + " (" + (ph.date || "") + ")";
+    });
+  });
 
   // ─── 사진마다 좋아요 ───
   {
