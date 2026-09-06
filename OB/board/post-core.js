@@ -2,9 +2,9 @@
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/OB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/OB/auth/likes.js";
-import { applyNav } from "/OB/board/nav.js?v=320";
-import { boardTags } from "/OB/board/board-info.js?v=320";
-import { findDates } from "/OB/board/calendar.js?v=320";
+import { applyNav } from "/OB/board/nav.js?v=321";
+import { boardTags } from "/OB/board/board-info.js?v=321";
+import { findDates } from "/OB/board/calendar.js?v=321";
 
 /** 글자를 화면에 안전하게 넣기 위한 다듬기 */
 function esc(t) {
@@ -330,6 +330,7 @@ function linkify(s) {
       ${attachedImages(p.files)}
       ${attachedPdfs(p.files)}
       ${fileBox(p.files)}
+      <div id="albumLink"></div>
       <div id="galShare"></div>
       ${p.source_url ? `<div class="src"><a href="${p.source_url}" target="_blank" rel="noopener">원문 보기 →</a></div>` : ""}
       ${p.source === "facebook" ? '<div class="src">※ 페이스북 그룹에서 옮겨온 글입니다.</div>' :
@@ -563,6 +564,90 @@ function linkify(s) {
 
     /* 운영진 : 이 글에 붙은 사진을 갤러리 앨범으로 보냅니다.
        사진을 다시 올리지 않고 같은 파일을 가리키게 하므로 빠르고 자리도 안 먹습니다. */
+
+    /* ── 이 글과 이어진 사진첩 ─────────────────────
+       글쓴이와 운영진이 앨범을 골라 두면, 보시는 분께는
+       「사진첩 보기」 단추 하나만 깔끔하게 보입니다. */
+    {
+      const slot = document.getElementById("albumLink");
+      const canLink = !!(meProfile && (meProfile.is_admin ||
+                        (user && p.author_id === user.id)));
+      const draw = (key, cat, title) => {
+        if (!slot) return;
+        slot.innerHTML = key
+          ? '<a class="albumgo" href="/OB/album.html?cat=' + encodeURIComponent(cat || "daily") +
+            '&id=' + encodeURIComponent(key) + '">' +
+            '<span class="ag-i">📷</span>' +
+            '<span class="ag-t">' + escapeHtml(title || "사진첩") + '</span>' +
+            '<span class="ag-go">사진첩 보기 →</span></a>'
+          : "";
+        slot.className = key ? "albumlink" : "";
+      };
+      draw(p.album_key, p.album_cat, "이 행사의 사진첩");
+      if (p.album_key) {                       // 사진첩 이름을 가져와 단추에 적습니다
+        sb.from("gallery_albums").select("title,category")
+          .eq("album_key", p.album_key).maybeSingle()
+          .then(({ data }) => {
+            if (data) draw(p.album_key, p.album_cat || data.category, data.title);
+          });
+      }
+
+      if (canLink) {
+        const pick = document.createElement("div");
+        pick.className = "albumpick";
+        pick.innerHTML =
+          '<span class="ap-t">이 글과 이어진 사진첩</span>' +
+          '<select class="ap-sel"><option value="">불러오는 중…</option></select>' +
+          '<button type="button" class="ap-go">잇기</button>' +
+          '<span class="ap-msg"></span>';
+        slot.parentNode.insertBefore(pick, slot.nextSibling);
+        const sel = pick.querySelector(".ap-sel");
+        const go = pick.querySelector(".ap-go");
+        const msg = pick.querySelector(".ap-msg");
+        go.disabled = true;
+
+        sb.from("gallery_albums").select("album_key,title,category").eq("org", ORG)
+          .then(({ data }) => {
+            const list = (data || []).filter(a => a.album_key);
+            list.sort((a, b) => String(b.album_key).localeCompare(String(a.album_key)));
+            sel.innerHTML = '<option value="">— 잇지 않음 —</option>' + list.map(a =>
+              '<option value="' + escapeHtml(a.album_key) + '"' +
+              ' data-cat="' + escapeHtml(a.category || "") + '"' +
+              ' data-title="' + escapeHtml(a.title || "") + '"' +
+              (a.album_key === p.album_key ? " selected" : "") + '>' +
+              escapeHtml(a.title || a.album_key) + '</option>').join("");
+            go.disabled = false;
+          });
+
+        go.addEventListener("click", async () => {
+          const opt = sel.selectedOptions[0];
+          const key = opt ? opt.value : "";
+          const cat = opt ? (opt.dataset.cat || "daily") : "";
+          const title = opt ? (opt.dataset.title || "") : "";
+          go.disabled = true;
+          msg.className = "ap-msg";
+          msg.textContent = "저장하는 중…";
+          const { error } = await sb.from("posts")
+            .update({ album_key: key || null, album_cat: key ? cat : null })
+            .eq("id", p.id);
+          go.disabled = false;
+          if (error) {
+            msg.className = "ap-msg err";
+            msg.textContent = /album_key|album_cat/.test(error.message || "")
+              ? "auth/post_album_link.sql 을 한 번 실행해주세요."
+              : "저장 실패: " + error.message;
+            return;
+          }
+          p.album_key = key || null;
+          p.album_cat = key ? cat : null;
+          draw(p.album_key, p.album_cat, title || "이 행사의 사진첩");
+          msg.className = "ap-msg ok";
+          msg.textContent = key ? "이었습니다 ✓" : "끊었습니다 ✓";
+          setTimeout(() => { msg.textContent = ""; }, 1800);
+        });
+      }
+    }
+
     if (meProfile && meProfile.is_admin) {
       const imgs = (Array.isArray(p.files) ? p.files : []).filter(f =>
         /^image\//.test(f.type || "") || /\.(png|jpe?g|gif|webp)$/i.test(f.name || ""));

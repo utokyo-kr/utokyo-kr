@@ -537,3 +537,20 @@ body.yb .legend .pieitem:hover{background:#eef7f0;color:#2a6b40;}
 /* 비동문 준회원 — 글을 못 쓰는 게시판에서는 단추가 잠깁니다 */
 #writeBtn.locked{opacity:.45;filter:grayscale(.4);}
 #writeBtn.locked::after{content:"🔒";margin-left:5px;font-size:12px;}
+
+/* 글과 이어진 사진첩 */
+.albumlink{margin:18px 0 4px;}
+.albumgo{display:inline-flex;align-items:center;gap:10px;padding:11px 18px;
+  border:1px solid #e0d7c0;border-radius:100px;background:#fdf9f0;
+  color:#6b5a2c;font-size:14.5px;font-weight:600;transition:.15s;}
+.albumgo:hover{border-color:#c9a961;background:#faf3e2;}
+.albumgo .ag-i{font-size:16px;}
+.albumgo .ag-go{font-size:13px;font-weight:400;color:#a08a4e;}
+.albumpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:8px 0 4px;font-size:13px;color:#8a8574;}
+.albumpick .ap-sel{font-family:inherit;font-size:13px;padding:4px 8px;max-width:280px;
+  border:1px solid #ded6c2;border-radius:6px;background:#fff;}
+.albumpick .ap-go{font-family:inherit;font-size:13px;padding:4px 12px;cursor:pointer;
+  border:1px solid #ded6c2;border-radius:6px;background:#f6f1e6;color:#6b5a2c;}
+.albumpick .ap-msg.ok{color:#2a7a45;}
+.albumpick .ap-msg.err{color:#b3453b;}
