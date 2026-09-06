@@ -434,6 +434,7 @@
 
 <script type="module">
 import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
+import { faceStyle } from "/YB/face-tag.js?v=319";
 
 const user = await currentUser();
 const me = user ? await myProfile() : null;
@@ -462,26 +463,17 @@ async function start() {
       (r.data || []).forEach((f) => FACES.set(f.profile_id, f));
     } catch (e) { /* 없어도 명단은 그대로 */ }
   }
-  /* 네모 자리(0~1)를 「그 자리만 보이게」 하는 배경 값으로 */
+  /* 네모 자리(0~1)를 「그 자리만 보이게」 하는 배경 값으로.
+     셈은 face-tag.js 의 faceStyle 하나만 씁니다 — 두 군데 적으면 갈라집니다. */
   function faceTag(id) {
     const f = FACES.get(id);
     if (!f || !f.box || !f.image_url) return "";
     const b = typeof f.box === "string" ? JSON.parse(f.box) : f.box;
-    if (!b || !(b.w > 0) || !(b.h > 0)) return "";
-    const p = 0.25;                              // 둘레를 조금 넉넉히
-    let x = b.x - b.w * p, y = b.y - b.h * p;
-    let w = b.w * (1 + p * 2), h = b.h * (1 + p * 2);
-    if (x < 0) { w += x; x = 0; }
-    if (y < 0) { h += y; y = 0; }
-    if (x + w > 1) w = 1 - x;
-    if (y + h > 1) h = 1 - y;
-    w = Math.max(0.01, w); h = Math.max(0.01, h);
-    const sx = (100 / w).toFixed(2), sy = (100 / h).toFixed(2);
-    const px = (w >= 1 ? 50 : (x / (1 - w)) * 100).toFixed(2);
-    const py = (h >= 1 ? 50 : (y / (1 - h)) * 100).toFixed(2);
+    const st = faceStyle(b);
+    if (st.size === "cover") return "";
     return '<span class="mface" title="앨범 사진에서" style="background-image:url(' +
-      esc(f.image_url) + ');background-size:' + sx + '% ' + sy +
-      '%;background-position:' + px + '% ' + py + '%"></span>';
+      esc(f.image_url) + ');background-size:' + st.size +
+      ';background-position:' + st.pos + '"></span>';
   }
 
   let rows = [], filter = "all", orgF = "all";

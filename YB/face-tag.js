@@ -30,17 +30,6 @@ export function boxFromDrag(a, b, w, h) {
   return box;
 }
 
-/** 이 자리에 있는 얼굴 — 겹치면 작은 것이 먼저 (뒤에 있는 사람도 고를 수 있게) */
-export function hitAt(faces, px, py) {
-  const list = (Array.isArray(faces) ? faces : []).filter((f) => f && f.box);
-  const on = list.filter((f) => {
-    const b = f.box;
-    return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
-  });
-  if (!on.length) return null;
-  return on.sort((a, b) => (a.box.w * a.box.h) - (b.box.w * b.box.h))[0];
-}
-
 /** 네모 자리를 「배경 그림으로 그 자리만 보이게」 하는 값으로.
  *  회원 명단에서 잘린 얼굴을 보일 때 씁니다 — 그림을 새로 만들지 않습니다.
  *  얼굴만 딱 자르면 갑갑하므로 둘레를 조금 넉넉히 둡니다(pad).
@@ -139,7 +128,12 @@ export async function mountFaces(o) {
 
   const draw = () => {
     const sel = layer.querySelector(".ftsel");
-    layer.innerHTML = faces.map((f, i) =>
+    /* 작은 얼굴을 나중에 그립니다 — 나중 것이 위에 오므로,
+       큰 얼굴 안에 든 작은 얼굴에도 커서를 얹을 수 있습니다.
+       (data-i 는 원래 차례를 그대로 씁니다) */
+    const order = faces.map((f, i) => [f, i])
+      .sort((a, b) => (b[0].box.w * b[0].box.h) - (a[0].box.w * a[0].box.h));
+    layer.innerHTML = order.map(([f, i]) =>
       '<span class="ftbox" data-i="' + i + '" ' +
       'style="left:' + (f.box.x * 100) + "%;top:" + (f.box.y * 100) +
       "%;width:" + (f.box.w * 100) + "%;height:" + (f.box.h * 100) + '%">' +

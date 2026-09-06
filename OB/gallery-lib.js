@@ -95,7 +95,7 @@ export async function loadGallery() {
     map.set(a.album_key, {
       key: a.album_key, cat: fold(a.category) || "daily",
       year: (iso(a.event_date) || "").slice(0, 4) || "",
-      title: a.title || "사진첩", custom: true, owner: a.created_by,
+      title: a.title || "사진첩", note: a.note || "", custom: true, owner: a.created_by,
       ownerName: a.owner_name || "", ownerAdmin: !!a.owner_admin, coverKey: a.cover_key || "",
       sort: a.sort != null ? a.sort : 0,      // 순서는 행사 날짜로 정한다(위로 띄우지 않음)
       photos: [],
@@ -110,7 +110,7 @@ export async function loadGallery() {
         key: alb.i, cat: fold(cat), year: (alb.d || "").slice(0, 4),
         title: ov.title || alb.t, fixedDate: iso(ov.event_date) || iso(alb.d),
         coverKey: ov.cover_key || "",
-        sort: ov.sort != null ? ov.sort : 0, photos: [],
+        sort: ov.sort != null ? ov.sort : 0, note: ov.note || "", photos: [],
       });
     });
   }
@@ -126,7 +126,7 @@ export async function loadGallery() {
         key, cat: p.cat, year: y,
         title: ov.title || (ALBUM_NAME[p.cat] || "{y}년").replace("{y}", y),
         coverKey: ov.cover_key || "",
-        sort: ov.sort != null ? ov.sort : 0, photos: [],
+        sort: ov.sort != null ? ov.sort : 0, note: ov.note || "", photos: [],
       });
     }
     map.get(key).photos.push(p);
@@ -135,9 +135,13 @@ export async function loadGallery() {
   const albums = [...map.values()];
   albums.forEach(a => {
     // 올린 순서가 아니라 사진에 적힌 날짜(파일 이름의 연·월·일)를 기준으로 늘어놓는다
-    a.photos.sort((x, y) => (y.date || "").localeCompare(x.date || "")
-                         || (x.sort - y.sort)
-                         || (x.key || "").localeCompare(y.key || ""));
+    /* 손으로 차례를 정한 사진첩(custom:)은 그 차례를 그대로 따릅니다.
+       그 밖에는 예전처럼 사진에 적힌 날짜를 먼저 봅니다. */
+    const byHand = String(a.key || "").startsWith("custom:");
+    a.photos.sort((x, y) => (byHand
+        ? (x.sort - y.sort) || (y.date || "").localeCompare(x.date || "")
+        : (y.date || "").localeCompare(x.date || "") || (x.sort - y.sort))
+      || (x.key || "").localeCompare(y.key || ""));
     const newest = a.photos.reduce((m, p) => (p.date > m ? p.date : m), "");
     if (a.custom) {
       const ov = albumTitles[a.key] || {};

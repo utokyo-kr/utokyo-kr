@@ -196,6 +196,21 @@
     .ftask { bottom:auto; top:100%; }
     .ftbar { top:-38px; }
   }
+  /* 앨범 설명 */
+  .ahead .anote{max-width:760px;margin:10px auto 0;font-size:14.5px;line-height:1.75;
+    color:rgba(255,255,255,.86);white-space:pre-wrap;text-align:center;}
+  .ahead .anote-edit{max-width:760px;margin:12px auto 0;}
+  .ahead .anote-edit textarea{width:100%;font-family:inherit;font-size:14px;line-height:1.7;
+    padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.10);color:#fff;resize:vertical;}
+  .ahead .anote-edit textarea::placeholder{color:rgba(255,255,255,.5);}
+  .ahead .anote-btns{display:flex;align-items:center;gap:10px;margin-top:7px;}
+  /* 드래그로 차례 바꾸기 */
+  .ph.movable{cursor:grab;}
+  .ph.dragging{opacity:.35;}
+  .ph.dropzone{outline:3px solid var(--gold, #c9a961);outline-offset:-3px;}
+  .ordbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin:0 0 12px;font-size:13px;color:#6f6a5c;}
 </style>
 </head>
 <body>
@@ -205,6 +220,15 @@
     <span class="en">Album</span>
     <h1 id="atitle">불러오는 중…</h1>
     <div class="meta" id="ameta"></div>
+    <div class="anote" id="anote" hidden></div>
+    <div class="anote-edit" id="anoteEdit" hidden>
+      <textarea id="anoteText" rows="3" maxlength="600"
+        placeholder="이 앨범이 어떤 자리였는지 몇 줄 적어 주세요."></textarea>
+      <div class="anote-btns">
+        <button class="rbtn" id="anoteSave">설명 저장</button>
+        <span class="rmsg" id="anoteMsg"></span>
+      </div>
+    </div>
     <div class="backs">
       <a class="back" id="aback" href="gallery.html">← 갤러리 목록</a>
       <a class="back" href="index.html">⌂ 학생회 첫화면</a>
@@ -266,10 +290,10 @@
 </div>
 
 <script type="module">
-import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=318";
+import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=319";
 import { sb, currentUser, myProfile, noteActivity } from "/YB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js";
-import { mountFaces } from "./face-tag.js?v=318";
+import { mountFaces } from "./face-tag.js?v=319";
 const ORG = "YB";
 {
   const q = new URLSearchParams(location.search);
@@ -594,6 +618,111 @@ const ORG = "YB";
         // 지울 수 있는 사진이 하나도 없으면 지우기 단추는 감춥니다
         if (!canRmAny) document.getElementById("rmSel").style.display = "none";
         if (isAdmin) document.getElementById("mvOpen").style.display = "";
+
+  /* ── 앨범 설명 ─────────────────────────────────
+     앨범을 만든 분(사진을 올린 분)과 운영진이 적을 수 있습니다. */
+  {
+    const box = document.getElementById("anote");
+    const ed = document.getElementById("anoteEdit");
+    const ta = document.getElementById("anoteText");
+    const canNote = isAdmin || !!(album.custom && user && album.owner === user.id);
+    if (album.note) { box.textContent = album.note; box.hidden = false; }
+    if (canNote) {
+      ed.hidden = false;
+      ta.value = album.note || "";
+      document.getElementById("anoteSave").addEventListener("click", async (e) => {
+        const b = e.currentTarget, m = document.getElementById("anoteMsg");
+        const text = ta.value.trim();
+        b.disabled = true; m.textContent = "저장하는 중…";
+        const { error } = await sb.from("gallery_albums").upsert(
+          { album_key: album.key, note: text || null, org: "YB",
+            updated_by: user.id, updated_at: new Date().toISOString() },
+          { onConflict: "album_key" });
+        b.disabled = false;
+        if (error) {
+          m.textContent = /note/.test(error.message || "")
+            ? "auth/album_note.sql 을 한 번 실행해주세요."
+            : "저장 실패: " + error.message;
+          return;
+        }
+        album.note = text;
+        box.textContent = text; box.hidden = !text;
+        m.textContent = "저장했습니다 ✓";
+        setTimeout(() => { m.textContent = ""; }, 1800);
+      });
+    }
+  }
+
+  /* ── 드래그로 사진 차례 바꾸기 ───────────────────
+     올린 분과 운영진만. 놓는 순간 그 차례가 그대로 저장됩니다. */
+  {
+    const canOrder = isAdmin || !!(album.custom && user && album.owner === user.id);
+    if (canOrder && album.photos.length > 1) {
+      const bar = document.createElement("div");
+      bar.className = "ordbar";
+      bar.innerHTML = '<b>✥ 사진을 끌어다 놓으면 차례가 바뀝니다.</b>' +
+                      '<span id="ordMsg"></span>';
+      grid.parentNode.insertBefore(bar, grid);
+      const oMsg = () => document.getElementById("ordMsg");
+
+      let from = null;
+      const tiles = () => [...grid.querySelectorAll(".ph")];
+      tiles().forEach(el => {
+        el.classList.add("movable");
+        el.draggable = true;
+        el.addEventListener("dragstart", (e) => {
+          from = el; el.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          try { e.dataTransfer.setData("text/plain", el.dataset.i); } catch (x) {}
+        });
+        el.addEventListener("dragend", () => {
+          el.classList.remove("dragging");
+          tiles().forEach(t => t.classList.remove("dropzone"));
+        });
+        el.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (el !== from) el.classList.add("dropzone");
+        });
+        el.addEventListener("dragleave", () => el.classList.remove("dropzone"));
+        el.addEventListener("drop", async (e) => {
+          e.preventDefault();
+          el.classList.remove("dropzone");
+          if (!from || from === el) return;
+          const list = tiles();
+          const a = list.indexOf(from), b = list.indexOf(el);
+          grid.insertBefore(from, a < b ? el.nextSibling : el);
+          /* 화면에 보이는 차례대로 번호를 다시 매깁니다 */
+          const order = tiles().map(t => album.photos[+t.dataset.i]);
+          order.forEach((p, i) => { p.sort = i; });
+          tiles().forEach((t, i) => { t.dataset.i = album.photos.indexOf(order[i]); });
+          await saveOrder(order);
+        });
+      });
+
+      async function saveOrder(order) {
+        const m = oMsg();
+        m.textContent = " 저장하는 중…";
+        const dbs = order.filter(p => p.kind === "db" && p.id);
+        const sts = order.filter(p => p.kind !== "db");
+        let err = null;
+        for (const p of dbs) {
+          const r = await sb.from("gallery_photos").update({ sort: p.sort }).eq("id", p.id);
+          if (r.error) { err = r.error; break; }
+        }
+        if (!err && sts.length) {
+          const now = new Date().toISOString();
+          const r = await sb.from("gallery_overrides").upsert(
+            sts.map(p => ({ photo_key: p.key, sort: p.sort,
+                            updated_by: user.id, updated_at: now })),
+            { onConflict: "photo_key" });
+          if (r.error) err = r.error;
+        }
+        m.textContent = err ? " 저장 실패 : " + err.message : " 차례를 저장했습니다 ✓";
+        if (!err) setTimeout(() => { m.textContent = ""; }, 1800);
+      }
+    }
+  }
+
         const cnt = () => {
           const n = picks.filter(c => c.checked).length;
           document.getElementById("pickCnt").textContent = `선택 ${n}장`;
