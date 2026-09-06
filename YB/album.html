@@ -310,10 +310,10 @@
 </div>
 
 <script type="module">
-import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=322";
+import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=323";
 import { sb, currentUser, myProfile, noteActivity } from "/YB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js";
-import { mountFaces } from "./face-tag.js?v=322";
+import { mountFaces } from "./face-tag.js?v=323";
 const ORG = "YB";
 {
   const q = new URLSearchParams(location.search);
@@ -386,37 +386,6 @@ const ORG = "YB";
          </div>`).join("")
       : '<div class="aempty" style="grid-column:1/-1;">아직 사진이 없습니다.<br>위에서 사진을 올려주세요.</div>';
     wireLikes();
-    /* ── 사진 설명 고치기 ───────────────────────────
-       올린 분과 운영진만. ✎ 를 누르면 그 자리에서 고칩니다. */
-    grid.querySelectorAll(".capedit").forEach((b) => {
-      const tile = b.closest(".ph");
-      const ph = album.photos[+tile.dataset.i];
-      const mine = !!(ph && ph.owner && user && ph.owner === user.id);
-      if (!(isAdmin || mine) || !ph || ph.kind !== "db") { b.remove(); return; }
-      b.addEventListener("click", async (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const now = ph.cap || "";
-        const text = prompt("이 사진의 설명을 적어주세요." + String.fromCharCode(10) + "(비우면 설명이 지워집니다)", now);
-        if (text === null) return;
-        const v = text.trim();
-        b.disabled = true;
-        const { error } = await sb.from("gallery_photos")
-          .update({ caption: v || null }).eq("id", ph.id);
-        b.disabled = false;
-        if (error) { alert("설명을 저장하지 못했습니다: " + error.message); return; }
-        ph.cap = v;
-        let el = tile.querySelector(".cap");
-        if (v) {
-          if (!el) {
-            el = document.createElement("span");
-            el.className = "cap";
-            tile.insertBefore(el, tile.querySelector(".dt"));
-          }
-          el.textContent = v;
-        } else if (el) el.remove();
-        tile.title = v + " (" + (ph.date || "") + ")";
-      });
-    });
   };
   draw();
 
@@ -565,6 +534,163 @@ const ORG = "YB";
     const me = user ? await myProfile() : null;
     const isAdmin = !!(me && me.is_admin);
     const myName = (me && me.name) || "";
+
+    /* ── 사진 설명 고치기 ───────────────────────────
+       올린 분과 운영진만. ✎ 를 누르면 그 자리에서 고칩니다. */
+    grid.querySelectorAll(".capedit").forEach((b) => {
+      const tile = b.closest(".ph");
+      const ph = album.photos[+tile.dataset.i];
+      const mine = !!(ph && ph.owner && user && ph.owner === user.id);
+      if (!(isAdmin || mine) || !ph || ph.kind !== "db") { b.remove(); return; }
+      b.addEventListener("click", async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const now = ph.cap || "";
+        const text = prompt("이 사진의 설명을 적어주세요." + String.fromCharCode(10) + "(비우면 설명이 지워집니다)", now);
+        if (text === null) return;
+        const v = text.trim();
+        b.disabled = true;
+        const { error } = await sb.from("gallery_photos")
+          .update({ caption: v || null }).eq("id", ph.id);
+        b.disabled = false;
+        if (error) { alert("설명을 저장하지 못했습니다: " + error.message); return; }
+        ph.cap = v;
+        let el = tile.querySelector(".cap");
+        if (v) {
+          if (!el) {
+            el = document.createElement("span");
+            el.className = "cap";
+            tile.insertBefore(el, tile.querySelector(".dt"));
+          }
+          el.textContent = v;
+        } else if (el) el.remove();
+        tile.title = v + " (" + (ph.date || "") + ")";
+      });
+    });
+
+    /* ── 앨범 설명 ─────────────────────────────────
+       앨범을 만든 분(사진을 올린 분)과 운영진이 적을 수 있습니다. */
+    {
+      const box = document.getElementById("anote");
+      const ed = document.getElementById("anoteEdit");
+      const ta = document.getElementById("anoteText");
+      const openBox = document.getElementById("anoteOpen");
+      const openBtn = document.getElementById("anoteBtn");
+      const canNote = isAdmin || !!(album.custom && user && album.owner === user.id);
+      if (album.note) { box.textContent = album.note; box.hidden = false; }
+      if (canNote) {
+        /* 평소에는 단추만 보이고, 누르셔야 고치는 칸이 열립니다. */
+        const relabel = () => {
+          openBtn.textContent = album.note ? "✎ 설명 고치기" : "✎ 설명 쓰기";
+        };
+        relabel();
+        openBox.hidden = false;
+        openBtn.addEventListener("click", () => {
+          ta.value = album.note || "";
+          openBox.hidden = true;
+          ed.hidden = false;
+          box.hidden = true;
+          ta.focus();
+        });
+        const close = () => {
+          ed.hidden = true;
+          openBox.hidden = false;
+          box.hidden = !album.note;
+          document.getElementById("anoteMsg").textContent = "";
+          relabel();
+        };
+        document.getElementById("anoteCancel").addEventListener("click", close);
+        document.getElementById("anoteSave").addEventListener("click", async (e) => {
+          const b = e.currentTarget, m = document.getElementById("anoteMsg");
+          const text = ta.value.trim();
+          b.disabled = true; m.textContent = "저장하는 중…";
+          const { error } = await sb.from("gallery_albums").upsert(
+            { album_key: album.key, note: text || null, org: "YB",
+              updated_by: user.id, updated_at: new Date().toISOString() },
+            { onConflict: "album_key" });
+          b.disabled = false;
+          if (error) {
+            m.textContent = /note/.test(error.message || "")
+              ? "auth/album_note.sql 을 한 번 실행해주세요."
+              : "저장 실패: " + error.message;
+            return;
+          }
+          album.note = text;
+          box.textContent = text;
+          m.textContent = "저장했습니다 ✓";
+          setTimeout(close, 900);
+        });
+      }
+    }
+
+    /* ── 드래그로 사진 차례 바꾸기 ───────────────────
+       올린 분과 운영진만. 놓는 순간 그 차례가 그대로 저장됩니다. */
+    {
+      const canOrder = isAdmin || !!(album.custom && user && album.owner === user.id);
+      if (canOrder && album.photos.length > 1) {
+        const bar = document.createElement("div");
+        bar.className = "ordbar";
+        bar.innerHTML = '<b>✥ 사진을 끌어다 놓으면 차례가 바뀝니다.</b>' +
+                        '<span id="ordMsg"></span>';
+        grid.parentNode.insertBefore(bar, grid);
+        const oMsg = () => document.getElementById("ordMsg");
+
+        let from = null;
+        const tiles = () => [...grid.querySelectorAll(".ph")];
+        tiles().forEach(el => {
+          el.classList.add("movable");
+          el.draggable = true;
+          el.addEventListener("dragstart", (e) => {
+            from = el; el.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            try { e.dataTransfer.setData("text/plain", el.dataset.i); } catch (x) {}
+          });
+          el.addEventListener("dragend", () => {
+            el.classList.remove("dragging");
+            tiles().forEach(t => t.classList.remove("dropzone"));
+          });
+          el.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            if (el !== from) el.classList.add("dropzone");
+          });
+          el.addEventListener("dragleave", () => el.classList.remove("dropzone"));
+          el.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            el.classList.remove("dropzone");
+            if (!from || from === el) return;
+            const list = tiles();
+            const a = list.indexOf(from), b = list.indexOf(el);
+            grid.insertBefore(from, a < b ? el.nextSibling : el);
+            /* 화면에 보이는 차례대로 번호를 다시 매깁니다 */
+            const order = tiles().map(t => album.photos[+t.dataset.i]);
+            order.forEach((p, i) => { p.sort = i; });
+            tiles().forEach((t, i) => { t.dataset.i = album.photos.indexOf(order[i]); });
+            await saveOrder(order);
+          });
+        });
+
+        async function saveOrder(order) {
+          const m = oMsg();
+          m.textContent = " 저장하는 중…";
+          const dbs = order.filter(p => p.kind === "db" && p.id);
+          const sts = order.filter(p => p.kind !== "db");
+          let err = null;
+          for (const p of dbs) {
+            const r = await sb.from("gallery_photos").update({ sort: p.sort }).eq("id", p.id);
+            if (r.error) { err = r.error; break; }
+          }
+          if (!err && sts.length) {
+            const now = new Date().toISOString();
+            const r = await sb.from("gallery_overrides").upsert(
+              sts.map(p => ({ photo_key: p.key, sort: p.sort,
+                              updated_by: user.id, updated_at: now })),
+              { onConflict: "photo_key" });
+            if (r.error) err = r.error;
+          }
+          m.textContent = err ? " 저장 실패 : " + err.message : " 차례를 저장했습니다 ✓";
+          if (!err) setTimeout(() => { m.textContent = ""; }, 1800);
+        }
+      }
+    }
     if (me && (me.approved || me.is_admin)) {
       const box = document.getElementById("addbox");
       box.classList.add("on");
@@ -672,130 +798,7 @@ const ORG = "YB";
         if (!canRmAny) document.getElementById("rmSel").style.display = "none";
         if (isAdmin) document.getElementById("mvOpen").style.display = "";
 
-  /* ── 앨범 설명 ─────────────────────────────────
-     앨범을 만든 분(사진을 올린 분)과 운영진이 적을 수 있습니다. */
-  {
-    const box = document.getElementById("anote");
-    const ed = document.getElementById("anoteEdit");
-    const ta = document.getElementById("anoteText");
-    const openBox = document.getElementById("anoteOpen");
-    const openBtn = document.getElementById("anoteBtn");
-    const canNote = isAdmin || !!(album.custom && user && album.owner === user.id);
-    if (album.note) { box.textContent = album.note; box.hidden = false; }
-    if (canNote) {
-      /* 평소에는 단추만 보이고, 누르셔야 고치는 칸이 열립니다. */
-      const relabel = () => {
-        openBtn.textContent = album.note ? "✎ 설명 고치기" : "✎ 설명 쓰기";
-      };
-      relabel();
-      openBox.hidden = false;
-      openBtn.addEventListener("click", () => {
-        ta.value = album.note || "";
-        openBox.hidden = true;
-        ed.hidden = false;
-        box.hidden = true;
-        ta.focus();
-      });
-      const close = () => {
-        ed.hidden = true;
-        openBox.hidden = false;
-        box.hidden = !album.note;
-        document.getElementById("anoteMsg").textContent = "";
-        relabel();
-      };
-      document.getElementById("anoteCancel").addEventListener("click", close);
-      document.getElementById("anoteSave").addEventListener("click", async (e) => {
-        const b = e.currentTarget, m = document.getElementById("anoteMsg");
-        const text = ta.value.trim();
-        b.disabled = true; m.textContent = "저장하는 중…";
-        const { error } = await sb.from("gallery_albums").upsert(
-          { album_key: album.key, note: text || null, org: "YB",
-            updated_by: user.id, updated_at: new Date().toISOString() },
-          { onConflict: "album_key" });
-        b.disabled = false;
-        if (error) {
-          m.textContent = /note/.test(error.message || "")
-            ? "auth/album_note.sql 을 한 번 실행해주세요."
-            : "저장 실패: " + error.message;
-          return;
-        }
-        album.note = text;
-        box.textContent = text;
-        m.textContent = "저장했습니다 ✓";
-        setTimeout(close, 900);
-      });
-    }
-  }
 
-  /* ── 드래그로 사진 차례 바꾸기 ───────────────────
-     올린 분과 운영진만. 놓는 순간 그 차례가 그대로 저장됩니다. */
-  {
-    const canOrder = isAdmin || !!(album.custom && user && album.owner === user.id);
-    if (canOrder && album.photos.length > 1) {
-      const bar = document.createElement("div");
-      bar.className = "ordbar";
-      bar.innerHTML = '<b>✥ 사진을 끌어다 놓으면 차례가 바뀝니다.</b>' +
-                      '<span id="ordMsg"></span>';
-      grid.parentNode.insertBefore(bar, grid);
-      const oMsg = () => document.getElementById("ordMsg");
-
-      let from = null;
-      const tiles = () => [...grid.querySelectorAll(".ph")];
-      tiles().forEach(el => {
-        el.classList.add("movable");
-        el.draggable = true;
-        el.addEventListener("dragstart", (e) => {
-          from = el; el.classList.add("dragging");
-          e.dataTransfer.effectAllowed = "move";
-          try { e.dataTransfer.setData("text/plain", el.dataset.i); } catch (x) {}
-        });
-        el.addEventListener("dragend", () => {
-          el.classList.remove("dragging");
-          tiles().forEach(t => t.classList.remove("dropzone"));
-        });
-        el.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          if (el !== from) el.classList.add("dropzone");
-        });
-        el.addEventListener("dragleave", () => el.classList.remove("dropzone"));
-        el.addEventListener("drop", async (e) => {
-          e.preventDefault();
-          el.classList.remove("dropzone");
-          if (!from || from === el) return;
-          const list = tiles();
-          const a = list.indexOf(from), b = list.indexOf(el);
-          grid.insertBefore(from, a < b ? el.nextSibling : el);
-          /* 화면에 보이는 차례대로 번호를 다시 매깁니다 */
-          const order = tiles().map(t => album.photos[+t.dataset.i]);
-          order.forEach((p, i) => { p.sort = i; });
-          tiles().forEach((t, i) => { t.dataset.i = album.photos.indexOf(order[i]); });
-          await saveOrder(order);
-        });
-      });
-
-      async function saveOrder(order) {
-        const m = oMsg();
-        m.textContent = " 저장하는 중…";
-        const dbs = order.filter(p => p.kind === "db" && p.id);
-        const sts = order.filter(p => p.kind !== "db");
-        let err = null;
-        for (const p of dbs) {
-          const r = await sb.from("gallery_photos").update({ sort: p.sort }).eq("id", p.id);
-          if (r.error) { err = r.error; break; }
-        }
-        if (!err && sts.length) {
-          const now = new Date().toISOString();
-          const r = await sb.from("gallery_overrides").upsert(
-            sts.map(p => ({ photo_key: p.key, sort: p.sort,
-                            updated_by: user.id, updated_at: now })),
-            { onConflict: "photo_key" });
-          if (r.error) err = r.error;
-        }
-        m.textContent = err ? " 저장 실패 : " + err.message : " 차례를 저장했습니다 ✓";
-        if (!err) setTimeout(() => { m.textContent = ""; }, 1800);
-      }
-    }
-  }
 
         const cnt = () => {
           const n = picks.filter(c => c.checked).length;
