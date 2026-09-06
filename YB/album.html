@@ -211,6 +211,10 @@
   .ph.dropzone{outline:3px solid var(--gold, #c9a961);outline-offset:-3px;}
   .ordbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
     margin:0 0 12px;font-size:13px;color:#6f6a5c;}
+  .ahead .anote-open{margin-top:10px;text-align:center;}
+  .ahead .rbtn.ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+    color:#fff;}
+  .ahead .rbtn.ghost:hover{background:rgba(255,255,255,.2);}
 </style>
 </head>
 <body>
@@ -221,11 +225,15 @@
     <h1 id="atitle">불러오는 중…</h1>
     <div class="meta" id="ameta"></div>
     <div class="anote" id="anote" hidden></div>
+    <div class="anote-open" id="anoteOpen" hidden>
+      <button class="rbtn ghost" id="anoteBtn">✎ 설명 쓰기</button>
+    </div>
     <div class="anote-edit" id="anoteEdit" hidden>
       <textarea id="anoteText" rows="3" maxlength="600"
         placeholder="이 앨범이 어떤 자리였는지 몇 줄 적어 주세요."></textarea>
       <div class="anote-btns">
-        <button class="rbtn" id="anoteSave">설명 저장</button>
+        <button class="rbtn" id="anoteSave">저장</button>
+        <button class="rbtn ghost" id="anoteCancel">취소</button>
         <span class="rmsg" id="anoteMsg"></span>
       </div>
     </div>
@@ -290,10 +298,10 @@
 </div>
 
 <script type="module">
-import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=319";
+import { CAT_NAME, loadGallery } from "./gallery-lib.js?v=320";
 import { sb, currentUser, myProfile, noteActivity } from "/YB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js";
-import { mountFaces } from "./face-tag.js?v=319";
+import { mountFaces } from "./face-tag.js?v=320";
 const ORG = "YB";
 {
   const q = new URLSearchParams(location.search);
@@ -625,11 +633,32 @@ const ORG = "YB";
     const box = document.getElementById("anote");
     const ed = document.getElementById("anoteEdit");
     const ta = document.getElementById("anoteText");
+    const openBox = document.getElementById("anoteOpen");
+    const openBtn = document.getElementById("anoteBtn");
     const canNote = isAdmin || !!(album.custom && user && album.owner === user.id);
     if (album.note) { box.textContent = album.note; box.hidden = false; }
     if (canNote) {
-      ed.hidden = false;
-      ta.value = album.note || "";
+      /* 평소에는 단추만 보이고, 누르셔야 고치는 칸이 열립니다. */
+      const relabel = () => {
+        openBtn.textContent = album.note ? "✎ 설명 고치기" : "✎ 설명 쓰기";
+      };
+      relabel();
+      openBox.hidden = false;
+      openBtn.addEventListener("click", () => {
+        ta.value = album.note || "";
+        openBox.hidden = true;
+        ed.hidden = false;
+        box.hidden = true;
+        ta.focus();
+      });
+      const close = () => {
+        ed.hidden = true;
+        openBox.hidden = false;
+        box.hidden = !album.note;
+        document.getElementById("anoteMsg").textContent = "";
+        relabel();
+      };
+      document.getElementById("anoteCancel").addEventListener("click", close);
       document.getElementById("anoteSave").addEventListener("click", async (e) => {
         const b = e.currentTarget, m = document.getElementById("anoteMsg");
         const text = ta.value.trim();
@@ -646,9 +675,9 @@ const ORG = "YB";
           return;
         }
         album.note = text;
-        box.textContent = text; box.hidden = !text;
+        box.textContent = text;
         m.textContent = "저장했습니다 ✓";
-        setTimeout(() => { m.textContent = ""; }, 1800);
+        setTimeout(close, 900);
       });
     }
   }
