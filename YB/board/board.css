@@ -21,7 +21,7 @@ a{text-decoration:none;color:inherit;}
 .mhead .mlogo{font-family:'Noto Serif KR',serif;font-weight:600;font-size:16.5px;color:#fff;line-height:1.25;}
 .mhead .mlogo small{display:block;font-size:9.5px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:.14em;font-family:'Noto Sans KR',sans-serif;}
 .mhead nav{display:flex;gap:2px;align-items:center;margin-left:auto;}
-.mhead nav > a,.mhead nav .dd > a{display:inline-block;padding:8px 12px;font-size:17px;color:rgba(255,255,255,.85);border-bottom:2px solid transparent;transition:.2s;}
+.mhead nav > a,.mhead nav .dd > a{display:inline-block;padding:10px 14px;font-size:17.5px;color:rgba(255,255,255,.85);border-bottom:2px solid transparent;transition:.2s;}
 .mhead nav > a:hover,.mhead nav .dd > a:hover{color:#e8c876;border-bottom-color:#c9a24b;}
 .mhead nav .dd{position:relative;z-index:1500;}
 .mhead .dd-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);display:none;flex-direction:column;gap:7px;padding-top:18px;min-width:150px;z-index:1500;}
@@ -578,6 +578,3 @@ body.yb .legend .pieitem:hover{background:#eef7f0;color:#2a6b40;}
   .mhead nav > a,.mhead nav .dd > a{transform:scaleX(.82);padding-left:3px;padding-right:3px;}
 }
 
-/* 학생회는 메뉴 이름이 길어 폭이 빠듯합니다 — 자간만 살짝 조입니다 (크기는 그대로) */
-body.yb .mhead nav > a,body.yb .mhead nav .dd > a{
-  padding-left:9px;padding-right:9px;letter-spacing:-.03em;}
