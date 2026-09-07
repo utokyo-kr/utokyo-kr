@@ -55,6 +55,19 @@
   #guestNotice li.can{border-color:#4f9c68;color:#1f5a33;font-weight:600;}
   #guestNotice a{color:#2a6b40;font-weight:600;border-bottom:1px solid #a9cfb4;}
   #guestNotice p{width:100%;font-size:12.5px;color:#6a7a6e;margin-top:2px;}
+  /* 상단 메뉴가 두 줄로 접히지 않게 — 글자 크기는 그대로, 자간·여백만 조입니다 */
+  nav.gnb > a,nav.gnb .dd > a{white-space:nowrap;}
+  nav.gnb .dd{flex:none;}
+  @media (max-width:1280px){
+    nav.gnb > a,nav.gnb .dd > a{padding-left:9px;padding-right:9px;letter-spacing:-.03em;}
+  }
+  @media (max-width:1120px){
+    nav.gnb > a,nav.gnb .dd > a{padding-left:6px;padding-right:6px;letter-spacing:-.055em;}
+  }
+  @media (max-width:1020px){
+    nav.gnb > a,nav.gnb .dd > a{display:inline-block;transform:scaleX(.88);
+      transform-origin:center;padding-left:4px;padding-right:4px;}
+  }
 </style>
 <style>
   :root{
@@ -1389,7 +1402,7 @@
 
 <script type="module">
 
-import { initCalendar } from "/YB/board/calendar.js?v=324";
+import { initCalendar } from "/YB/board/calendar.js?v=325";
 
 // ─── 일정 달력 ───
 initCalendar("#calTop", { mode: "mini", upcoming: false, titles: true });
@@ -1505,7 +1518,7 @@ try {
 
 // 역대 회장 및 임원진 — 회장 목록과 게시판 모양의 명단 자료
 try {
-  const { initCouncil } = await import("/YB/council.js?v=324");
+  const { initCouncil } = await import("/YB/council.js?v=325");
   await initCouncil();
 } catch (e) { /* 자료를 불러오지 못해도 나머지 화면은 그대로 */ }
 
@@ -1535,7 +1548,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/YB/board/nav.js?v=324";
+  import { applyMenu } from "/YB/board/nav.js?v=325";
   applyMenu("YB");
 </script>
 </body>

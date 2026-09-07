@@ -17,7 +17,7 @@ a{text-decoration:none;color:inherit;}
 /* ─── 메인 메뉴 헤더 (서브페이지 공용) ─── */
 .mhead{background:#101d33;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);
   position:sticky;top:35px;z-index:1200;}
-.mhead .inner{max-width:1180px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:66px;gap:14px;}
+.mhead .inner{max-width:1320px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:66px;gap:14px;}
 .mhead .mlogo{font-family:'Noto Serif KR',serif;font-weight:600;font-size:16.5px;color:#fff;line-height:1.25;}
 .mhead .mlogo small{display:block;font-size:9.5px;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:.14em;font-family:'Noto Sans KR',sans-serif;}
 .mhead nav{display:flex;gap:2px;align-items:center;margin-left:auto;}
@@ -470,3 +470,30 @@ body.yb .legend .pieitem:hover{background:#eef7f0;color:#2a6b40;}
   border:1px solid #ded6c2;border-radius:6px;background:#f6f1e6;color:#6b5a2c;}
 .albumpick .ap-msg.ok{color:#2a7a45;}
 .albumpick .ap-msg.err{color:#b3453b;}
+
+/* ── 상단 메뉴가 두 줄로 접히지 않게 ──────────────
+   글자 크기는 그대로 두고, 화면이 좁아지면
+   자간과 좌우 여백부터 줄이고 그래도 모자라면 장평을 눌러 한 줄로 지킵니다. */
+.mhead nav > a,.mhead nav .dd > a{white-space:nowrap;}
+.mhead nav .dd{flex:none;}
+.mhead .mlogo{flex:none;}
+@media (max-width:1240px){
+  .mhead nav > a,.mhead nav .dd > a{padding-left:9px;padding-right:9px;letter-spacing:-.02em;}
+}
+@media (max-width:1120px){
+  .mhead .inner{gap:8px;padding-left:14px;padding-right:14px;}
+  .mhead nav > a,.mhead nav .dd > a{padding-left:7px;padding-right:7px;letter-spacing:-.045em;}
+}
+@media (max-width:1020px){
+  /* 여기서부터는 장평을 눌러 폭만 줄입니다 (글자 크기는 그대로) */
+  .mhead nav > a,.mhead nav .dd > a{
+    display:inline-block;transform:scaleX(.9);transform-origin:center;
+    padding-left:5px;padding-right:5px;letter-spacing:-.06em;}
+}
+@media (max-width:950px){
+  .mhead nav > a,.mhead nav .dd > a{transform:scaleX(.82);padding-left:3px;padding-right:3px;}
+}
+
+/* 학생회는 메뉴 이름이 길어 폭이 빠듯합니다 — 자간만 살짝 조입니다 (크기는 그대로) */
+body.yb .mhead nav > a,body.yb .mhead nav .dd > a{
+  padding-left:9px;padding-right:9px;letter-spacing:-.03em;}
