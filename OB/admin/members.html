@@ -117,6 +117,11 @@
   .gsel{display:block;margin-top:4px;padding:3px 6px;border:1px solid #ddd6c4;border-radius:6px;
     font-family:inherit;font-size:11.5px;background:#fffdf8;color:#2f2a1d;cursor:pointer;}
   .gsel:focus{outline:0;border-color:#c9a24b;}
+  .jsel{display:block;padding:3px 6px;border:1px solid #ddd6c4;border-radius:6px;max-width:132px;
+    font-family:inherit;font-size:11.5px;background:#fffdf8;color:#2f2a1d;cursor:pointer;}
+  .jsel:focus{outline:0;border-color:#c9a24b;}
+  .jobstat .ms-bar i{background:linear-gradient(90deg,#8fb1a3,#3f6f5f);}
+  .jobstat .ms-c,.jobstat .ms-r.on .ms-n,.jobstat .ms-pick{color:#3f6f5f;}
   /* 갈래 단추 옆 명수 */
   .tabs .sn{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:100px;
     background:rgba(0,0,0,.07);font-size:11px;font-weight:700;
@@ -335,6 +340,7 @@
       </div>
       <div class="msg" id="listMsg"></div>
       <div class="majorstat" id="majorStat"></div>
+      <div class="majorstat jobstat" id="jobStat"></div>
       <div style="overflow-x:auto;"><table id="tbl"></table></div>
     </div>
 
@@ -493,6 +499,7 @@ async function start() {
 
   let rows = [], filter = "all", orgF = "all";
   let majorF = "";        // 전공 계열 그래프에서 고른 계열
+  let jobF = "";          // 직군 그래프에서 고른 직군
   let sortKey = "name", sortDir = 1;                // 처음에는 이름 가나다순
   // 어느 홈페이지에서 들어왔는지 — 그 쪽 회원을 위에 보여준다
   // 이 화면은 재한 도쿄대학 총동문회 운영진 것입니다. 제 단체 명단이 먼저 나옵니다.
@@ -510,6 +517,7 @@ async function start() {
       { col: "welcome_sent_at", sql: "auth/admin_members.sql", what: "‘아직 안 보낸 회원’ 골라 보내기" },
       { col: "company",         sql: "auth/add_company.sql",   what: "직장명" },
       { col: "job_title",       sql: "auth/add_company.sql",   what: "직급" },
+      { col: "job_group",       sql: "auth/add_job_group.sql", what: "직군(손으로 고른 것)" },
     ];
     let have = LATER.map(x => x.col), missing = [], data, error;
     for (let n = 0; n <= LATER.length; n++) {
@@ -697,6 +705,80 @@ async function start() {
     return "모름";
   }
 
+  /* ── 직군 — 직장명·직급을 보고 짐작하되, 운영진이 고른 것(job_group)이 있으면 그것 ──
+     「직군별로 몇 명 가입했는지 알 수 있게, 회원 직군 변경 가능하게」 */
+  const JOB_ORDER = ["교수·연구", "공무원·공공기관", "기업", "전문직·자영", "학생·대학원", "기타", "모름"];
+  const JOB_RULES = [
+    [/학생|대학원생|석사과정|박사과정|연구생|student|재학/i, "학생·대학원"],
+    [/교수|강사|연구위원|연구원|연구소|연구관|research|professor|lecturer|대학교|대학원|大学|univ|college|academy|학회/i, "교수·연구"],
+    [/시청|도청|군청|구청|청$|부$|처$|위원회|공사|공단|진흥원|재단|공공|정부|의회|국회|법원|ministry|government|공무원|주무관|사무관|서기관|LH|SH|GH|코레일|KOTRA|KIST|ETRI/i, "공무원·공공기관"],
+    [/변호사|변리사|회계사|세무사|의사|한의사|치과|병원|의원|clinic|법률|법무|건축사|사무소|사업|대표|자영|개업|약국/i, "전문직·자영"],
+  ];
+  function jobOf(r) {
+    if (r && r.job_group) return r.job_group;                // 운영진이 고른 것이 먼저
+    const t = [(r && r.company) || "", (r && r.job_title) || ""].join(" ").trim();
+    if (!t) return "모름";
+    for (const [re, name] of JOB_RULES) if (re.test(t)) return name;
+    return "기업";                                            // 직장명이 있는데 위에 안 걸리면 기업으로
+  }
+  /** 직군별로 몇 분인지 — 전공 계열 그래프와 같은 생김새 */
+  function drawJobStat(all) {
+    const box = document.getElementById("jobStat");
+    if (!box) return;
+    const use = (all || []).filter(byOrg);
+    if (!use.length) { box.innerHTML = ""; return; }
+    const n = {};
+    use.forEach(r => { const j = jobOf(r); n[j] = (n[j] || 0) + 1; });
+    const rows = JOB_ORDER.filter(j => n[j]).map(j => [j, n[j]]);
+    const max = Math.max(...rows.map(r => r[1]), 1);
+    const known = use.length - (n["모름"] || 0);
+    const manual = use.filter(r => r.job_group).length;
+    box.innerHTML =
+      '<div class="ms-h">직군별 인원 <span>' + use.length + '명 중 ' + known + '명 확인 · 운영진이 고른 ' + manual + '명' +
+      (jobF ? ' · <b class="ms-pick">' + esc(jobF) + '</b> 만 보는 중 (다시 누르면 전체)' : '') +
+      (n["모름"] ? ' · 모름 ' + n["모름"] + '명' : '') + '</span></div>' +
+      '<div class="ms-b">' + rows.map(([j, c]) =>
+        '<div class="ms-r' + (jobF === j ? ' on' : '') + '" data-j="' + esc(j) + '">' +
+        '<span class="ms-n">' + esc(j) + '</span>' +
+        '<span class="ms-bar"><i style="width:' + Math.round(c / max * 100) + '%"></i></span>' +
+        '<span class="ms-c">' + c + '</span></div>').join("") + '</div>';
+    box.querySelectorAll(".ms-r").forEach(el => el.addEventListener("click", () => {
+      jobF = (jobF === el.dataset.j) ? "" : el.dataset.j;
+      if (jobF) { filter = "all"; chosen = []; }
+      render();
+    }));
+  }
+  /** 줄마다 직군을 고르는 칸 — 고르면 그 자리에서 저장합니다 */
+  function jobSel(r) {
+    const cur = jobOf(r), manual = !!(r && r.job_group);
+    return '<select class="jsel" title="직군 — 고르면 바로 저장됩니다' + (manual ? "" : " (지금은 직장·직급으로 짐작한 것)") + '">' +
+      JOB_ORDER.map(j => `<option value="${j}"${j === cur ? " selected" : ""}>${j}${(!manual && j === cur) ? " (짐작)" : ""}</option>`).join("") +
+      "</select>";
+  }
+  function wireJobSel(scope) {
+    (scope || document.getElementById("tbl")).querySelectorAll(".jsel").forEach(sel => {
+      if (sel.dataset.wired) return;
+      sel.dataset.wired = "1";
+      sel.addEventListener("change", async () => {
+        const tr = sel.closest("tr");
+        const r = rows.find(x => x.id === tr.dataset.id);
+        if (!r) return;
+        sel.disabled = true;
+        const to = sel.value;
+        const res = await saveRows(sb.from("profiles").update({ job_group: to }).eq("id", r.id));
+        sel.disabled = false;
+        if (res.error || !res.n) {
+          alert("직군을 저장하지 못했습니다 — " + (res.error ? res.error.message : "고칠 권한이 없거나 칸이 아직 없습니다 (auth/add_job_group.sql)"));
+          sel.value = jobOf(r); return;
+        }
+        r.job_group = to;
+        drawJobStat(rows);
+        const opt = sel.querySelector("option:checked"); if (opt) opt.textContent = to;   // 「(짐작)」 꼬리를 뗍니다
+        sel.title = "직군 — 고르면 바로 저장됩니다";
+      });
+    });
+  }
+
   /** 전공별로 몇 분인지 — 가로 막대로 봅니다 */
   function drawMajorStat(all) {
     const box = document.getElementById("majorStat");
@@ -751,6 +833,7 @@ async function start() {
       org:     r => r.member_type || "",
       faculty: r => ((r.faculty || "") + " " + (r.grad_year || "")).trim(),
       major:   r => majorOf(r),
+      job:     r => jobOf(r),
       company: r => ((r.company || "") + " " + (r.job_title || "")).trim(),
       login:   r => scoreOf(ACT.get(r.id)),
       joined:  r => r.created_at || "",
@@ -759,6 +842,7 @@ async function start() {
     };
     let list = pick(filter).slice();
     if (majorF) list = list.filter(r => majorOf(r) === majorF);   // 그래프에서 고른 계열만
+    if (jobF) list = list.filter(r => jobOf(r) === jobF);         // 그래프에서 고른 직군만
     // 승인을 기다리는 분은 어떤 차례로 보시든 늘 맨 위에 둡니다.
     //   그래야 아래 가나다순으로 늘어선 기존 가입자와 저절로 갈립니다.
     const waiting = (r) => (r.approved ? 1 : 0);
@@ -792,6 +876,7 @@ async function start() {
                (gu ? ` · 비동문 ${gu}` : "") + `)`;
       })();
     drawMajorStat(rows);
+    drawJobStat(rows);
     const showJob = orgF !== "YB";      // 재학생 명단에는 직장·직급을 두지 않는다
     const t = document.getElementById("tbl");
     if (!list.length) {
@@ -810,7 +895,7 @@ async function start() {
          정작 가장 먼저 봐야 할 것이 안 보였습니다. */
       [["name","이름"],["email","이메일"],["phone","연락처"],["org","구분"],
        ["grade","등급"],["state","상태"],
-       ["faculty","전공 · 연도"],["major","전공 계열"],["company","직장 · 직급"],["login","활동"],["joined","가입일"]]
+       ["faculty","전공 · 연도"],["major","전공 계열"],["company","직장 · 직급"],["job","직군"],["login","활동"],["joined","가입일"]]
         .filter(([k]) => k !== "company" || showJob)
         .map(([k, t]) => `<th data-s="${k}"${sortKey === k ? ' class="sorted"' : ""}>${t}` +
           `<span class="arr">${sortKey === k ? (sortDir > 0 ? "▲" : "▼") : "⇅"}</span></th>`).join("") +
@@ -830,6 +915,7 @@ async function start() {
         <td>${esc(r.faculty) || "-"} ${esc(r.grad_year) || ""}</td>
         <td><span class="mjchip">${esc(majorOf(r))}</span></td>
         ${showJob ? `<td>${esc(r.company) || "-"} ${esc(r.job_title) || ""}</td>` : ""}
+        <td class="jcell">${jobSel(r)}</td>
         <td>${actCell(r.id)}</td>
         <td>${(r.created_at || "").slice(0, 10)}</td>
         <td class="acts"><button class="btn sm tog">${r.approved ? "승인 취소" : "승인"}</button>
@@ -918,6 +1004,7 @@ async function start() {
       });
     }
     wireGradeSel(t);
+    wireJobSel(t);
 
     // ── 동문 명단에서 회원 여부 확인 ──
     t.querySelectorAll(".chk2").forEach(b => b.addEventListener("click", async () => {
