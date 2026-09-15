@@ -2,8 +2,8 @@ import { sb, currentUser, myProfile } from "/OB/auth/auth.js";
 // ─── 게시판 목록 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 // 그래서 한쪽만 고쳐져 서로 어긋나는 일이 생기지 않습니다.
-import { applyNav } from "/OB/board/nav.js?v=326";
-import { boardInfo, boardTags, tagInfo } from "/OB/board/board-info.js?v=326";
+import { applyNav } from "/OB/board/nav.js?v=327";
+import { boardInfo, boardTags, tagInfo } from "/OB/board/board-info.js?v=327";
 
 /* 옮겨온 글의 지은이에는 소속·직함이 함께 붙어 있는 경우가 많습니다.
    («학98.석02.박04.남지현 도시 Ph.D», «경희대 화공과 이용택» 처럼)
@@ -54,7 +54,7 @@ async function drawAssembly(cat) {
   if (old) old.remove();
   if (cat !== "assembly" || ORG !== "OB") return;
   let mod = null;
-  try { mod = await import("/OB/board/assembly-intro.js?v=326"); } catch (e) { return; }
+  try { mod = await import("/OB/board/assembly-intro.js?v=327"); } catch (e) { return; }
   if (!document.getElementById("asmIntroCss")) {
     const st = document.createElement("style");
     st.id = "asmIntroCss";
@@ -681,14 +681,16 @@ export async function initBoard(ORG) {
     rows.forEach(p => {
       let key;
       if (cat) { // 특정 게시판: 제목 앞 [말머리] 기준
-        const m = (p.title || "").match(/^\s*[\[【]([^\]】]{1,12})[\]】]/);
+        /* 말머리는 20자까지 — 「도시환경토목(C.U.E)」 처럼 긴 것도 제 몫으로 셉니다.
+           (예전 12자 제한에 걸려 「일반」으로 뭉뚱그려지고 있었습니다) */
+        const m = (p.title || "").match(/^\s*[\[【]([^\]】]{1,20})[\]】]/);
         key = m ? m[1].trim() : "일반";
       } else {  // 전체: 게시판 분류 기준
         key = CAT[p.category] || p.category;
       }
       counts[key] = (counts[key] || 0) + 1;
     });
-    const items = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+    const items = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 16);   // 말머리가 15개라 넉넉히
     const total = items.reduce((s,[,v]) => s+v, 0);
     if (items.length < 2) { box.innerHTML = ""; return; }
 

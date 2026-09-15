@@ -1,8 +1,8 @@
 // ─── 게시판 글쓰기 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/YB/auth/auth.js";
-import { applyNav } from "/YB/board/nav.js?v=326";
-import { boardInfo, tagInfo } from "/YB/board/board-info.js?v=326";
+import { applyNav } from "/YB/board/nav.js?v=327";
+import { boardInfo, tagInfo } from "/YB/board/board-info.js?v=327";
 
 export async function initWrite(ORG) {
   const HOME = ORG === "YB" ? "/YB" : "/OB";
