@@ -324,9 +324,12 @@ function linkify(s) {
   const isGuest = mtype === "GUEST";                 // 도쿄대 출신이 아닌 준회원
   const GUEST_CATS = ["notice", "exam", "scholarship"];   // 준회원께 열어드리는 곳
   const side = mtype === "YB" ? "YB" : "OB";
-  // 준회원은 공지사항·수험생 게시판만, 그 밖의 분은 제 단체 글만
-  const otherOrg = !!(meP && !meP.is_admin &&
-    (isGuest ? !GUEST_CATS.includes((p && p.category) || "") : side !== ORG));
+  const SHARED_CATS = ["mentoring", "jobs", "major", "career", "counsel"];   // 두 단체가 함께 쓰는 곳
+  const pcat = (p && p.category) || "";
+  const mine = !!(p && user && p.author_id === user.id);                  // 제가 쓴 글은 늘 봅니다
+  // 준회원은 공지사항·수험생 게시판만, 그 밖의 분은 제 단체 글과 함께 쓰는 게시판 글
+  const otherOrg = !mine && !!(meP && !meP.is_admin &&
+    (isGuest ? !GUEST_CATS.includes(pcat) : (side !== ORG && !SHARED_CATS.includes(pcat))));
   if (p && otherOrg && p.visibility !== "public") {
     box.innerHTML = '<div class="empty"><b>도쿄대학 한국인학생회</b> 회원 전용 글입니다.<br>' +
       '재한 도쿄대학 총동문회 회원께는 열려 있지 않습니다.<br><br>' +

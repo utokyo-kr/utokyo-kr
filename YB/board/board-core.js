@@ -329,6 +329,7 @@ export async function initBoard(ORG) {
     const side = mtype === "YB" ? "YB" : "OB";
     otherOrg = !!(p && !p.is_admin && (isGuest || side !== ORG));
     if (isGuest) openCats = GUEST_CATS;         // 준회원은 공지사항과 수험생 게시판까지
+    else if (otherOrg) openCats = PUBLIC_CATS.concat(SHARED);   // 다른 쪽 회원은 공개 게시판 + 함께 쓰는 게시판(OB/YB)
     isAdmin = !!(p && p.is_admin);
     const el = document.getElementById("authLinks");
     el.innerHTML = "";
@@ -376,7 +377,7 @@ export async function initBoard(ORG) {
         `그 밖의 게시판은 ${HOME_NAME} 회원 전용입니다.`
       : otherOrg
       ? `<b>${HOME_NAME} 회원 전용 게시판입니다.</b> ` +
-        `${OTHER_NAME} 회원께는 누구나 보실 수 있는 게시판만 보여드립니다.`
+        `${OTHER_NAME} 회원께는 누구나 보실 수 있는 게시판과 (OB/YB) 함께 쓰는 게시판만 보여드립니다.`
       : `<b>회원으로 가입하셔야 나머지 게시판 정보를 보실 수 있습니다.</b> ` +
       '<a href="/YB/auth/login.html">로그인</a> · <a href="/YB/auth/signup.html">회원가입</a>';
     // 회원 전용 탭과 「전체」 탭 숨기기
