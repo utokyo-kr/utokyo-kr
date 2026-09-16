@@ -1416,7 +1416,7 @@ import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
     notice:"공지사항", free:"자유게시판", qna:"Q&A", jobs:"구인·채용", market:"벼룩시장",
     scholarship:"장학정보", exam:"수험생", history:"활동 이력", career:"진학/취업 후기", counsel:"진로상담",
   };
-  const JOIN_CATS  = ["mentoring", "major", "event", "club", "suggest"];
+  const JOIN_CATS  = ["mentoring", "counsel", "career", "event", "club", "major", "suggest"];
   const BOARD_CATS = ["notice", "free", "qna", "jobs", "market", "scholarship", "exam"];
   const SHARED = ["mentoring", "jobs", "major"];      // 두 단체가 함께 쓰는 게시판
   const esc = s => (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1548,7 +1548,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/YB/board/nav.js?v=327";
+  import { applyMenu } from "/YB/board/nav.js?v=218";
   applyMenu("YB");
 </script>
 </body>
