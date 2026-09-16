@@ -1418,7 +1418,7 @@ import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
   };
   const JOIN_CATS  = ["mentoring", "counsel", "career", "event", "club", "major", "suggest"];
   const BOARD_CATS = ["notice", "free", "qna", "jobs", "market", "scholarship", "exam"];
-  const SHARED = ["mentoring", "jobs", "major"];      // 두 단체가 함께 쓰는 게시판
+  const SHARED = ["mentoring", "jobs", "major", "career", "counsel"];      // 두 단체가 함께 쓰는 게시판
   const esc = s => (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   /* 로그인 정보가 실린 뒤에 물어봅니다.
      먼저 물으면 비회원으로 보여 회원전용 글이 빠집니다. */
@@ -1548,7 +1548,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/YB/board/nav.js?v=218";
+  import { applyMenu } from "/YB/board/nav.js?v=219";
   applyMenu("YB");
 </script>
 </body>

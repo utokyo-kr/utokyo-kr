@@ -61,12 +61,30 @@ export async function initWrite(ORG) {
       org = v;
       orgTabs.forEach(a => a.classList.toggle("on", a.dataset.org === v));
     }
+    /* 소속 담장(auth/org_wall_write.sql) — 운영진이 아니면 제 소속으로만 글을 만들 수 있습니다.
+       그러니 단추를 고르게 두면 저장할 때 「row-level security」 오류만 봅니다.
+       제 소속으로 고정하고, 함께 쓰는 게시판(OB/YB)은 양쪽에 다 보인다고 알려 드립니다. */
+    const mySide = profile.member_type === "YB" ? "YB" : "OB";
+    if (!profile.is_admin && !profile.is_owner) {
+      org = mySide;
+      orgTabs.forEach(a => {
+        if (a.dataset.org !== mySide) a.style.display = "none";
+        else a.title = "회원 소속으로 올라갑니다";
+      });
+      const note = document.createElement("div");
+      note.className = "hint";
+      note.style.cssText = "font-size:12.5px;color:#7d7768;margin:4px 0 10px;line-height:1.6;";
+      note.textContent = mySide === "OB"
+        ? "졸업생(OB) 명의로 올라갑니다. 「(OB/YB)」가 붙은 게시판은 학생회 쪽에서도 함께 보입니다."
+        : "재학생(YB) 명의로 올라갑니다. 「(OB/YB)」가 붙은 게시판은 총동문회 쪽에서도 함께 보입니다.";
+      document.getElementById("orgTabs").after(note);
+    }
     setOrg(org);
     orgTabs.forEach(a => a.addEventListener("click", (e) => { e.preventDefault(); setOrg(a.dataset.org); }));
 
     // 게시판 분류 · 말머리 선택 (조직별)
     const CATS_OB = { assembly:"총회", free:"자유게시판", club:"소모임", major:"전공별모임(OB/YB)", mentoring:"멘토멘티(OB/YB)", forum:"포럼·세미나", jobs:"구인·채용(OB/YB)", condolence:"경조사", notice:"공지사항", research:"단행본 및 연구소개", suggest:"동문회에 바란다" };
-    const CATS_YB = { mentoring:"멘토멘티(OB/YB)", event:"행사", club:"소모임", major:"전공별모임(OB/YB)", suggest:"학생회에 바란다", jobs:"구인·채용(OB/YB)", free:"자유게시판", qna:"Q&A", scholarship:"장학·연구지원", market:"벼룩시장", exam:"수험생 게시판", notice:"공지사항", history:"활동 이력", career:"진학/취업 후기", counsel:"진로상담" };
+    const CATS_YB = { mentoring:"멘토멘티(OB/YB)", event:"행사", club:"소모임", major:"전공별모임(OB/YB)", suggest:"학생회에 바란다", jobs:"구인·채용(OB/YB)", free:"자유게시판", qna:"Q&A", scholarship:"장학·연구지원", market:"벼룩시장", exam:"수험생 게시판", notice:"공지사항", history:"활동 이력", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)" };
     const CATS = ORG === "YB" ? CATS_YB : CATS_OB;
 
     const TAGS_OB = {

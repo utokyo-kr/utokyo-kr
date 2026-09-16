@@ -181,7 +181,7 @@ export async function initPost(ORG) {
                 parttime:"아르바이트", market:"벼룩시장",
                 club:"소모임", major:"전공별모임", event:"행사", history:"활동 이력",
                 mentoring:"멘토멘티(OB/YB)", suggest:"학생회에 바란다",
-                exam:"수험생 게시판", career:"진학/취업 후기", counsel:"진로상담",
+                exam:"수험생 게시판", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)",
                 scholarship:"장학·연구지원" };
 
   // ── 큰 제목 : 지금 보고 있는 글이 속한 게시판 이름으로 ──
@@ -242,7 +242,7 @@ ${url}`;
     /* 두 단체가 함께 쓰는 게시판에서는 밴드 · 페이스북 · 인스타그램을 모두 둡니다.
        화면마다 원래 있던 단추가 달라, 없는 것만 만들어 붙이고 차례를 맞춥니다. */
     {
-      const SHARED = ["mentoring", "jobs", "major"];
+      const SHARED = ["mentoring", "jobs", "major", "career", "counsel"];
       const want = SHARED.includes(p.category)
         ? [["shBand", "밴드에 공유", "band"],
            ["shFb", "페이스북에 공유", "fb"],
