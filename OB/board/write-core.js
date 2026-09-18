@@ -1,8 +1,8 @@
 // ─── 게시판 글쓰기 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/OB/auth/auth.js";
-import { applyNav } from "/OB/board/nav.js?v=327";
-import { boardInfo, tagInfo } from "/OB/board/board-info.js?v=327";
+import { applyNav } from "/OB/board/nav.js?v=329";
+import { boardInfo, tagInfo } from "/OB/board/board-info.js?v=329";
 
 export async function initWrite(ORG) {
   const HOME = ORG === "YB" ? "/YB" : "/OB";
@@ -165,6 +165,19 @@ export async function initWrite(ORG) {
 
     const preCat = new URLSearchParams(location.search).get("cat");
     setCat(CATS[preCat] ? preCat : Object.keys(CATS)[0]);
+
+    /* 달력에서 날짜를 눌러 오셨으면 그 날짜를 제목 앞에 적어 둡니다.
+       「10월 16일」 처럼 적혀 있으면 달력이 그 날로 알아봅니다. */
+    {
+      const d = new URLSearchParams(location.search).get("date") || "";
+      const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      const tEl = document.getElementById("title");
+      if (m && tEl && !editId && !tEl.value) {
+        tEl.value = (+m[2]) + "월 " + (+m[3]) + "일 ";
+        tEl.focus();
+        try { tEl.setSelectionRange(tEl.value.length, tEl.value.length); } catch (e) {}
+      }
+    }
 
     // ── 파일 첨부 ──
     let files = [];                              // 이미 올라간 것 {name,path,size,type}

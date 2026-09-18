@@ -14,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════
 import { sb } from "/YB/auth/auth.js";
 
-import { fixedEvents } from "/YB/board/calendar-fixed.js?v=327";
+import { fixedEvents } from "/YB/board/calendar-fixed.js?v=329";
 
 const ORG = "YB";
 
@@ -121,6 +121,17 @@ export function findDates(title, body, base, opts) {
         const cand = new Date(y, +m[1] - 1, +m[2]);
         if (cand.getTime() < base.getTime() - 92 * 864e5) y += 1;
         push(y, +m[1], +m[2], line.slice(m.index + m[0].length), line);
+      }
+      // ③ 10/16 · 10.16  — 연도 없이 빗금이나 점으로 적은 것
+      //    (주소 · 분수 · 2026/10/16 같은 것은 앞뒤에 숫자나 빗금이 더 붙어 있어 걸러집니다)
+      const RE_SLASH = /(?:^|[^\d\/.])(\d{1,2})[\/.](\d{1,2})(?![\d\/.])/g;
+      while ((m = RE_SLASH.exec(line))) {
+        const mo = +m[1], d = +m[2];
+        if (mo < 1 || mo > 12 || d < 1 || d > 31) continue;
+        let y = baseY;
+        const cand = new Date(y, mo - 1, d);
+        if (cand.getTime() < base.getTime() - 92 * 864e5) y += 1;
+        push(y, mo, d, line.slice(m.index + m[0].length), line);
       }
     });
   };
@@ -333,6 +344,14 @@ export async function initCalendar(sel, opts) {
   const today = new Date();
   const todayKey = key(today);
   let y = today.getFullYear(), mo = today.getMonth(), picked = "";
+  /* 운영진이면 달력에서 바로 글을 쓸 수 있습니다 (일반 회원은 보기만) */
+  let canWrite = false;
+  try {
+    const m = await import("/YB/auth/auth.js");
+    const me = await m.myProfile();
+    canWrite = !!(me && me.is_admin);
+  } catch (e) {}
+  const writeUrl = (k) => "/YB/write.html?date=" + k;
 
   // 이번 달에 아무것도 없으면 앞으로 가장 가까운 일정이 있는 달을 보여줍니다
   const ahead = events.filter((e) => e.key >= todayKey);
@@ -359,6 +378,7 @@ export async function initCalendar(sel, opts) {
              <div class="cal-lh">${picked.replace(/-/g, ".")} 일정 ${dayList.length}건
                <button class="cal-x" title="닫기">✕</button></div>
              ${dayList.map(evCard).join("") || '<div class="cal-none">이 날은 일정이 없습니다.</div>'}
+             ${canWrite ? `<a class="cal-write" href="${writeUrl(picked)}">✎ 이 날에 글 쓰기</a>` : ""}
            </div>`
         : !showUpcoming ? ""
         : `<div class="cal-list">
@@ -399,6 +419,15 @@ export async function initCalendar(sel, opts) {
       });
       c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     });
+    /* 아무것도 없는 날 — 운영진은 누르면 바로 그 날짜로 글을 씁니다.
+       (일반 회원에게는 빈 칸일 뿐입니다) */
+    if (canWrite) {
+      box.querySelectorAll(".cd:not(.has):not(.off)").forEach((c) => {
+        c.classList.add("can-write");
+        c.title = "누르면 이 날짜로 글을 씁니다";
+        c.addEventListener("click", () => { location.href = writeUrl(c.dataset.k); });
+      });
+    }
   }
   /* 휴대전화 : 달력을 옆으로 쓸어 달을 넘깁니다.
      왼쪽으로 쓸면 다음 달, 오른쪽으로 쓸면 지난 달 —
