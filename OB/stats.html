@@ -47,6 +47,11 @@
   .rank th{font-size:12.5px;color:#a09a86;font-weight:400;border-bottom:1px solid #e6dfcb;}
   .rank td.no{width:44px;color:#a09a86;font-variant-numeric:tabular-nums;}
   .rank td.nm{font-weight:600;color:#101d33;white-space:nowrap;}
+  .org{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;vertical-align:1px;}
+  .org.OB{background:#e8edf6;color:#2b4a86;}
+  .org.YB{background:#e3f1e6;color:#1f6b3a;}
+  .org.GUEST{background:#eee9dd;color:#7a6f5a;}
+  .stattop li .org{font-size:10px;padding:0 5px;margin-left:5px;}
   .rank td.n{text-align:right;font-variant-numeric:tabular-nums;color:#4a4636;white-space:nowrap;}
   .rank td.sc{text-align:right;font-weight:700;color:#8a6d2b;font-variant-numeric:tabular-nums;}
   .rank tr.me{background:#fdf6e6;}
@@ -218,6 +223,9 @@ applyNav("OB", "사용통계 | 재한 도쿄대학 총동문회");
 applyAuthLinks("OB");
 
 const ORG_NAME = { OB: "재한 도쿄대학 총동문회", YB: "도쿄대학 한국인학생회", GUEST: "비동문 준회원" };
+const ORG_SHORT = { OB: "동문회", YB: "학생회", GUEST: "준회원" };
+/** 이름 옆 소속 알약 — OB 동문회 / YB 학생회 / 준회원 */
+const orgChip = (o) => o ? `<span class="org ${esc(o)}">${ORG_SHORT[o] || esc(o)}</span>` : "";
 const KIND = [["login", "로그인"], ["visit", "방문"], ["view", "쪽 보기"],
               ["read", "글읽기"], ["comment", "댓글"], ["post", "글쓰기"],
               ["photo", "사진"], ["liked", "좋아요 받음"]];
@@ -317,8 +325,9 @@ async function start() {
     return;
   }
 
-  // 이 화면의 단체 기록만 골라 봅니다 (학생회 화면에는 학생회 회원만)
-  const all = (b.data || []).filter(r => r.org === org);
+  // 이 화면의 단체 기록만 골라 봅니다 (학생회 화면에는 학생회 회원만).
+  //   운영진은 두 단체를 다 맡으므로 모두 보되, 이름 옆에 소속(동문회·학생회)을 붙여 가릅니다.
+  const all = (b.data || []).filter(r => me.is_admin || r.org === org);
   const months = (m.data || []).filter(r => r.org === org);
 
   // 내 기록은 따로 챙깁니다 — 운영진처럼 소속이 다른 분도 제 것은 보셔야 하니
@@ -399,7 +408,7 @@ async function start() {
     if (!el) return;
     const one = kind !== "all" && kind !== "each" ? kind : "";
     const list = rows
-      .map(r => ({ nm: r.name, me: r.is_me, n: one ? (r[one + "_n"] || 0) : Math.round(r.score) }))
+      .map(r => ({ nm: r.name, org: r.org, me: r.is_me, n: one ? (r[one + "_n"] || 0) : Math.round(r.score) }))
       .filter(x => x.n > 0)
       .sort((x, y) => y.n - x.n)
       .slice(0, 10);
@@ -408,7 +417,7 @@ async function start() {
     el.innerHTML = `<h4>${label} Top 10</h4>` +
       (list.length
         ? "<ol>" + list.map(x => `<li class="${x.me ? "me" : ""}">` +
-            `<span class="nm">${esc(x.nm)}</span>` +
+            `<span class="nm">${esc(x.nm)}${orgChip(x.org)}</span>` +
             `<span class="bar"><i style="width:${Math.round(x.n / top * 100)}%;"></i></span>` +
             `<span class="n">${x.n}</span></li>`).join("") + "</ol>"
         : '<div class="none">아직 기록이 없습니다.</div>') +
@@ -433,7 +442,7 @@ async function start() {
       `<th style="text-align:right;${!use ? "color:#8a6d2b;font-weight:700;" : ""}">점수</th></tr></thead><tbody>` +
       list.slice(0, 30).map((r, i) => `<tr class="${r.is_me ? "me" : ""}">
         <td class="${i < 3 ? "medal" : "no"}">${i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
-        <td class="nm">${esc(r.name)}</td>
+        <td class="nm">${esc(r.name)}${orgChip(r.org)}</td>
         ${KIND.map(([k]) => `<td class="n">${r[k + "_n"] || 0}</td>`).join("")}
         <td class="sc">${Math.round(r.score)}</td>
       </tr>`).join("") + "</tbody>";
