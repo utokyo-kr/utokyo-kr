@@ -89,6 +89,7 @@
   .chip{display:inline-block;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:500;}
   .chip.ok{background:#e7f3ea;color:#2f7a45;}
   .chip.wait{background:#fdf1e2;color:#a3671f;}
+  .by{display:block;color:#8b93a1;font-size:10.5px;margin-top:2px;white-space:nowrap;}
   .chip.ob{background:#fdf6e6;color:#8a6d2b;}
   .chip.yb{background:#eaf4ec;color:#2f6b3c;}
   .empty{padding:44px 0;text-align:center;color:#a8a291;font-size:14px;}
@@ -498,6 +499,7 @@ async function start() {
   }
 
   let rows = [], filter = "all", orgF = "all";
+  let NAME = new Map();                       // id → 이름 (누가 승인했는지 보여줄 때)
   let majorF = "";        // 전공 계열 그래프에서 고른 계열
   let jobF = "";          // 직군 그래프에서 고른 직군
   let sortKey = "name", sortDir = 1;                // 처음에는 이름 가나다순
@@ -518,6 +520,10 @@ async function start() {
       { col: "company",         sql: "auth/add_company.sql",   what: "직장명" },
       { col: "job_title",       sql: "auth/add_company.sql",   what: "직급" },
       { col: "job_group",       sql: "auth/add_job_group.sql", what: "직군(손으로 고른 것)" },
+      { col: "approved_by",  sql: "auth/approval_log.sql", what: "승인한 운영진" },
+      { col: "approved_at",  sql: "auth/approval_log.sql", what: "승인 시각" },
+      { col: "grade_set_by", sql: "auth/approval_log.sql", what: "등급 정한 운영진" },
+      { col: "grade_set_at", sql: "auth/approval_log.sql", what: "등급 정한 시각" },
     ];
     let have = LATER.map(x => x.col), missing = [], data, error;
     for (let n = 0; n <= LATER.length; n++) {
@@ -546,6 +552,7 @@ async function start() {
       return;
     }
     rows = data || [];
+    NAME = new Map(rows.map(r => [r.id, r.name]));
     await loadFaces();                 // 앨범에서 단 얼굴 (없으면 조용히 넘어갑니다)
     render(); refreshEmails();
   }
@@ -617,6 +624,14 @@ async function start() {
 
   /** 명단에 없었지만 운영진이 직접 회원으로 올린 경우 = 재승인 */
   const isRegrant = (r) => !r.is_admin && r.grade === "member" && !!r.grade_manual_at;
+
+  /** 「홍길동 · 09-18」 — 누가 · 언제 (없으면 빈 문자열) */
+  function byLine(id, at) {
+    if (!id && !at) return "";
+    const who = NAME.get(id) || (id ? "운영진" : "SQL");
+    const d = at ? String(at).slice(5, 10) : "";
+    return `<small class="by">${esc(who)}${d ? " · " + d : ""}</small>`;
+  }
 
   function gradeChip(r) {
     const g = r.is_admin ? "admin" : (r.grade || "guest");
@@ -907,11 +922,11 @@ async function start() {
         <td class="em">${esc(r.email) || "-"}</td>
         <td class="em">${r.phone ? `<a href="tel:${esc(String(r.phone).replace(/[^0-9+]/g, ""))}">${esc(phoneText(r.phone))}</a>` : "-"}</td>
         <td>${r.member_type ? `<span class="chip ${r.member_type === "YB" ? "yb" : r.member_type === "GUEST" ? "wait" : "ob"}">${r.member_type === "GUEST" ? "비동문" : r.member_type}</span>` : "-"}</td>
-        <td class="gcell">${gradeChip(r)}${gradeSel(r)}</td>
+        <td class="gcell">${gradeChip(r)}${gradeSel(r)}${byLine(r.grade_set_by, r.grade_set_at)}</td>
         <td>${r.approved
               ? (isRegrant(r) ? '<span class="chip ok">재승인</span>'
                               : '<span class="chip ok">승인</span>')
-              : '<span class="chip wait">대기</span>'}</td>
+              : '<span class="chip wait">대기</span>'}${byLine(r.approved_by, r.approved_at)}</td>
         <td>${esc(r.faculty) || "-"} ${esc(r.grad_year) || ""}</td>
         <td><span class="mjchip">${esc(majorOf(r))}</span></td>
         ${showJob ? `<td>${esc(r.company) || "-"} ${esc(r.job_title) || ""}</td>` : ""}
