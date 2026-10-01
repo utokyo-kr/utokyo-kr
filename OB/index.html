@@ -214,6 +214,11 @@
   .dc-join{border-top:3px solid #84b08d;}
   .dc-board{border-top:3px solid #9d8ec2;}
   .dc-gal{border-top:3px solid #7fa3bd;}
+  /* 왼쪽 칸 — 포럼·세미나(위) + 게시판 새 글(아래)을 반씩 */
+  .dash-stack{display:flex;flex-direction:column;gap:20px;min-width:0;}
+  .dash-stack .dcard{flex:1;}
+  .dc-forum .ico{background:#eef1f8;color:#3d4a7a;}
+  .dc-forum{border-top:3px solid #8e9cc6;}
   /* 소개 카드 안 요약 */
   /* 게시판 카드의 목록과 폰트·크기·색상을 동일하게 */
   .dsum{display:flex;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid #f6f2e8;}
@@ -820,6 +825,20 @@
         </div>
       </div>
 
+      <!-- 왼쪽 칸 : 포럼·세미나 새 글(위) + 게시판 새 글(아래) -->
+      <div class="dash-stack">
+
+      <!-- 포럼·세미나 -->
+      <div class="dcard dc-forum">
+        <a class="dhead" href="/OB/board.html?cat=forum">
+          <h3><span class="ico">🎓</span>포럼·세미나 새 글</h3>
+          <span class="more">전체보기 +</span>
+        </a>
+        <div class="dbody">
+          <ul id="dashForum"><li><a><span class="tt">불러오는 중…</span></a></li></ul>
+        </div>
+      </div>
+
       <!-- 게시판 -->
       <div class="dcard dc-board">
         <a class="dhead" href="/OB/board.html">
@@ -831,6 +850,8 @@
         </div>
       </div>
 
+      </div><!-- /.dash-stack -->
+
       <!-- 갤러리 -->
       <a class="dcard dc-gal" href="gallery.html">
         <div class="dhead">
@@ -838,10 +859,10 @@
           <span class="more">전체보기 +</span>
         </div>
         <div class="dgal">
-          <span><img src="../images/gallery/assembly/cover_t.jpg?v=329b3b5b07" alt="총회" loading="lazy"></span>
-          <span><img src="../images/gallery/club/cover_t.jpg?v=329b3b5b07" alt="소모임" loading="lazy"></span>
-          <span><img src="../images/gallery/faculty/cover_t.jpg?v=329b3b5b07" alt="전공별모임" loading="lazy"></span>
-          <span><img src="../images/gallery/forum/cover_t.jpg?v=329b3b5b07" alt="포럼·세미나" loading="lazy"></span>
+          <span><img src="../images/gallery/assembly/cover_t.jpg?v=330b3b5b07" alt="총회" loading="lazy"></span>
+          <span><img src="../images/gallery/club/cover_t.jpg?v=330b3b5b07" alt="소모임" loading="lazy"></span>
+          <span><img src="../images/gallery/faculty/cover_t.jpg?v=330b3b5b07" alt="전공별모임" loading="lazy"></span>
+          <span><img src="../images/gallery/forum/cover_t.jpg?v=330b3b5b07" alt="포럼·세미나" loading="lazy"></span>
         </div>
       </a>
 
@@ -937,7 +958,7 @@
           <p><b>포럼 · 학술</b> — 박규태 · 김영근</p>
           <p><b>멘토멘티</b> — 송진화</p>
           <p><b>국제 · 홍보</b> — 송완범 · 조관자 · 한명석</p>
-          <p><b>산업계 교류</b> — 김동민</p>
+          <p><b>산업계 교류</b> — 김동민 · 김경환</p>
           <p><b>동호회</b> — 이행석<span class="aff">(골프)</span> · 안국진<span class="aff">(등산)</span></p>
           <p><b>총회</b> — 이시훈 · 김보람</p>
         </div>
@@ -1236,7 +1257,7 @@
         </div>
       </div>
       <div class="rgrp">
-        <h3 class="rh">이사진<span class="ren">Directors</span><span class="rcnt">19명</span></h3>
+        <h3 class="rh">이사진<span class="ren">Directors</span><span class="rcnt">20명</span></h3>
       </div>
       <div class="rlist">
         <div class="rp">
@@ -1332,6 +1353,11 @@
           <div class="rn">김동민<span class="rr">사업이사</span></div>
           <p class="rb">JLK 대표</p>
           <p class="rm">신영역창성과학연구과 첨단에너지공학 · 박2012</p>
+          <p class="rd">산업계 교류</p>
+        </div>
+        <div class="rp">
+          <div class="rn">김경환<span class="rr">사업이사</span></div>
+          <p class="rb">NT로봇 대표</p>
           <p class="rd">산업계 교류</p>
         </div>
         <div class="rp">
@@ -1548,27 +1574,27 @@
     </div>
     <div class="gal-grid">
       <a class="gsq" href="gallery.html?cat=assembly">
-        <span class="ph"><img src="../images/gallery/assembly/cover_t.jpg?v=329b3b5b07" alt="총회" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/assembly/cover_t.jpg?v=330b3b5b07" alt="총회" loading="lazy"></span>
         <span class="cap">총회<small>2012 – 2026</small></span>
       </a>
       <a class="gsq" href="gallery.html?cat=club">
-        <span class="ph"><img src="../images/gallery/club/cover_t.jpg?v=329b3b5b07" alt="소모임" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/club/cover_t.jpg?v=330b3b5b07" alt="소모임" loading="lazy"></span>
         <span class="cap">소모임<small>등산 · 골프 · 지회</small></span>
       </a>
       <a class="gsq" href="gallery.html?cat=faculty">
-        <span class="ph"><img src="../images/gallery/faculty/cover_t.jpg?v=329b3b5b07" alt="전공별모임" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/faculty/cover_t.jpg?v=330b3b5b07" alt="전공별모임" loading="lazy"></span>
         <span class="cap">전공별모임<small>계열 · 학과별</small></span>
       </a>
       <a class="gsq" href="gallery.html?cat=forum">
-        <span class="ph"><img src="../images/gallery/forum/cover_t.jpg?v=329b3b5b07" alt="포럼·세미나" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/forum/cover_t.jpg?v=330b3b5b07" alt="포럼·세미나" loading="lazy"></span>
         <span class="cap">포럼·세미나<small>학술 · 한일교류</small></span>
       </a>
       <a class="gsq" href="gallery.html?cat=old">
-        <span class="ph"><img src="../images/gallery/old/cover_t.jpg?v=329b3b5b07" alt="옛날사진" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/old/cover_t.jpg?v=330b3b5b07" alt="옛날사진" loading="lazy"></span>
         <span class="cap">옛날사진<small>창립기 신년하례식</small></span>
       </a>
       <a class="gsq" href="gallery.html?cat=daily">
-        <span class="ph"><img src="../images/gallery/daily/cover_t.jpg?v=329b3b5b07" alt="일상" loading="lazy"></span>
+        <span class="ph"><img src="../images/gallery/daily/cover_t.jpg?v=330b3b5b07" alt="일상" loading="lazy"></span>
         <span class="cap">일상<small>교류회 · 임원회의</small></span>
       </a>
     </div>
@@ -1684,7 +1710,7 @@
 <script type="module">
 // 로그인 상태를 상단바에 반영
 import { sb, currentUser, myProfile } from "/OB/auth/auth.js";
-import { initCalendar } from "/OB/board/calendar.js?v=329";
+import { initCalendar } from "/OB/board/calendar.js?v=330";
 
 // ─── 일정 달력 ───
 initCalendar("#calTop",  { mode: "mini", upcoming: false, titles: true });
@@ -1698,7 +1724,7 @@ initCalendar("#calTop",  { mode: "mini", upcoming: false, titles: true });
     notice:"공지사항", free:"자유게시판", jobs:"구인·채용", condolence:"경조사",
     research:"단행본·연구", suggest:"동문회에 바란다",
   };
-  const JOIN_CATS  = ["assembly", "club", "major", "mentoring", "forum"];
+  const JOIN_CATS  = ["assembly", "club", "major", "mentoring"];   // 포럼·세미나는 아래 전용 카드에서 따로 보여줍니다
   const BOARD_CATS = ["notice", "free", "jobs", "condolence", "research", "suggest"];
   const SHARED = ["mentoring", "jobs", "major"];      // 두 단체가 함께 쓰는 게시판
   const esc = s => (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1708,7 +1734,7 @@ initCalendar("#calTop",  { mode: "mini", upcoming: false, titles: true });
   const head = t => { const m = String(t||"").match(/^\s*[\[【]([^\]】]{1,20})[\]】]/); return m ? m[1].trim() : ""; };
   const body = t => String(t||"").replace(/^\s*[\[【][^\]】]*[\]】]\s*/, "");
 
-  async function fill(id, cats, emptyMsg, link, n) {
+  async function fill(id, cats, emptyMsg, link, n, noBadge) {
     const el = document.getElementById(id);
     if (!el) return;
     try {
@@ -1722,7 +1748,7 @@ initCalendar("#calTop",  { mode: "mini", upcoming: false, titles: true });
       }
       el.innerHTML = data.map(p => `
         <li><a href="/OB/post.html?id=${p.id}">
-          <span class="bd">${esc(NAME[p.category] || p.category)}</span>
+          ${noBadge ? "" : `<span class="bd">${esc(NAME[p.category] || p.category)}</span>`}
           ${head(p.title) ? `<span class="tg">${esc(head(p.title))}</span>` : ""}
           <span class="tt">${esc(body(p.title))}</span>
           <span class="dt">${(p.created_at||"").slice(0,10)}</span>
@@ -1733,8 +1759,10 @@ initCalendar("#calTop",  { mode: "mini", upcoming: false, titles: true });
   }
 
   fill("dashJoin", JOIN_CATS, "아직 올라온 글이 없습니다 →", "/OB/board.html?cat=assembly");
+  // 왼쪽 칸을 반씩 — 포럼·세미나 5건(게시판 이름표는 생략) + 게시판 6건
+  fill("dashForum", ["forum"], "아직 올라온 글이 없습니다 →", "/OB/board.html?cat=forum", 5, true);
   fill("dashPosts", BOARD_CATS,
-       "로그인하시면 회원 전용 게시글을 보실 수 있습니다.", "/OB/board.html", 13);
+       "로그인하시면 회원 전용 게시글을 보실 수 있습니다.", "/OB/board.html", 6);
 })();
 try {
   const user = await currentUser();
@@ -1904,7 +1932,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/OB/board/nav.js?v=329";
+  import { applyMenu } from "/OB/board/nav.js?v=330";
   applyMenu("OB");
 
 </script>
