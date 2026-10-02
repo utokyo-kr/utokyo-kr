@@ -14,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════
 import { sb } from "/YB/auth/auth.js";
 
-import { fixedEvents } from "/YB/board/calendar-fixed.js?v=330";
+import { fixedEvents } from "/YB/board/calendar-fixed.js?v=331";
 
 const ORG = "YB";
 
