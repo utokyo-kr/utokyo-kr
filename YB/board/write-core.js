@@ -168,6 +168,21 @@ export async function initWrite(ORG) {
       }));
     }
     const PUBLIC_CATS = ORG === "YB" ? ["notice", "jobs", "parttime", "exam"] : ["notice", "promo"];
+
+    /* 익명으로 쓰기 — 화면에 그 칸이 있을 때만 (지금은 학생회 글쓰기에만 있습니다).
+       공지사항 · 활동 이력은 학생회 공식 글이라 익명을 두지 않습니다.
+       실제로 이름을 감추는 일은 DB 트리거(auth/anon_posting.sql)가 합니다. */
+    const ANON_OFF = ["notice", "history"];
+    const anonRow = document.getElementById("anonRow");
+    const anonBox = document.getElementById("isAnon");
+    let origAnon = false, hasAnonCol = false;   // 고치는 글이 원래 익명이었는지 / is_anon 칸이 있는지
+    function syncAnon() {
+      if (!anonRow) return;
+      const off = ANON_OFF.includes(category);
+      anonRow.style.display = off ? "none" : "";
+      if (off && anonBox) anonBox.checked = false;
+    }
+
     function setCat(v) {
       category = v;
       catPick.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.dataset.v === v));
@@ -177,6 +192,7 @@ export async function initWrite(ORG) {
       renderTags();
       const vi = document.getElementById("visInfo");
       if (vi) vi.value = PUBLIC_CATS.includes(category) ? "전체 공개 — 로그인 없이도 읽을 수 있습니다" : "회원 전용";
+      syncAnon();
     }
     catPick.querySelectorAll("a").forEach(a => a.addEventListener("click", e => { e.preventDefault(); setCat(a.dataset.v); }));
 
@@ -327,6 +343,11 @@ export async function initWrite(ORG) {
         if (typeof fs === "string") { try { fs = JSON.parse(fs); } catch (e) { fs = null; } }
         files = Array.isArray(fs) ? fs : [];
         drawFiles();
+        if ("is_anon" in p) {
+          hasAnonCol = true;
+          origAnon = !!p.is_anon;
+          if (anonBox) anonBox.checked = origAnon;
+        }
       }
     }
 
@@ -351,6 +372,9 @@ export async function initWrite(ORG) {
         tagPick.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
+      const wantAnon = !!(anonBox && anonBox.checked && !ANON_OFF.includes(category));
+      if (editId && origAnon && !wantAnon &&
+          !confirm("실명으로 바꾸면 이 글의 글쓴이가 모두에게 보입니다. 바꿀까요?")) return;
       btn.disabled = true;
       msg.className = "msg";
       let attached;
@@ -373,16 +397,22 @@ export async function initWrite(ORG) {
         content: document.getElementById("content").value,
         files: attached.length ? attached : null,
       };
+      // is_anon 칸이 아직 없는 DB 에서도 실명 글은 그대로 써지도록, 필요할 때만 보냅니다
+      if (wantAnon || hasAnonCol) row.is_anon = wantAnon;
       let res;
       if (editId) {
         res = await sb.from("posts").update({ ...row, updated_at: new Date().toISOString() }).eq("id", editId).select("id").single();
       } else {
         res = await sb.from("posts").insert({ ...row, author_id: user.id, author_name: profile.name || "" }).select("id").single();
-        if (!res.error) noteActivity("post", 1, res.data && res.data.id);
+        // 익명 글은 참여 점수에 넣지 않습니다 — 점수가 오르는 것만으로 누가 썼는지 짐작할 수 있어서
+        if (!res.error && !wantAnon) noteActivity("post", 1, res.data && res.data.id);
       }
       btn.disabled = false;
       if (res.error) {
-        msg.className = "msg err"; msg.textContent = "등록 실패: " + res.error.message;
+        msg.className = "msg err";
+        msg.textContent = /is_anon/.test(res.error.message || "")
+          ? "익명 쓰기가 아직 켜지지 않았습니다 — 운영진이 auth/anon_posting.sql 을 한 번 실행해주세요."
+          : "등록 실패: " + res.error.message;
       } else {
         location.href = HOME + "/post.html?id=" + res.data.id;
       }

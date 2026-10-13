@@ -326,7 +326,19 @@ function linkify(s) {
   const side = mtype === "YB" ? "YB" : "OB";
   const SHARED_CATS = ["mentoring", "jobs", "major", "career", "counsel"];   // 두 단체가 함께 쓰는 곳
   const pcat = (p && p.category) || "";
-  const mine = !!(p && user && p.author_id === user.id);                  // 제가 쓴 글은 늘 봅니다
+  /* 익명 글 — 실제 글쓴이는 anon_authors 표에 있고, 본인과 운영진에게만 읽힙니다.
+     그래서 이 표에서 한 줄이 돌아오면 「내가 쓴 글」 이거나 「운영진이 보는 중」 입니다. */
+  let anonPost = null;
+  if (p && p.is_anon && user) {
+    const { data: ap } = await sb.from("anon_authors").select("author_id,author_name")
+      .eq("kind", "post").eq("row_id", p.id).maybeSingle();
+    anonPost = ap || null;
+  }
+  const myAnonPost = !!(anonPost && anonPost.author_id === user.id);
+  const anonNote = !anonPost ? ""
+    : myAnonPost ? ' <small style="color:#8a8574;">(내가 쓴 익명 글)</small>'
+    : ` <small style="color:#b0473a;" title="운영진에게만 보입니다">(운영진만 보임 · ${escapeHtml(anonPost.author_name || "")})</small>`;
+  const mine = !!(p && user && (p.author_id === user.id || myAnonPost));   // 제가 쓴 글은 늘 봅니다
   // 준회원은 공지사항·수험생 게시판만, 그 밖의 분은 제 단체 글과 함께 쓰는 게시판 글
   const otherOrg = !mine && !!(meP && !meP.is_admin &&
     (isGuest ? !GUEST_CATS.includes(pcat) : (side !== ORG && !SHARED_CATS.includes(pcat))));
@@ -346,7 +358,7 @@ function linkify(s) {
         <span class="chip ${p.category}">${CAT[p.category] || p.category}</span>
       </div>
       <h2>${escapeHtml(p.title)}</h2>
-      <div class="pmeta"><span title="${escapeHtml(p.author_name || "")}">${escapeHtml(shortName(p.author_name))}</span> · ${p.created_at.slice(0,16).replace("T"," ")}</div>
+      <div class="pmeta"><span title="${escapeHtml(p.author_name || "")}">${escapeHtml(shortName(p.author_name))}</span>${anonNote} · ${p.created_at.slice(0,16).replace("T"," ")}</div>
       <div class="body">${linkify(p.content)}</div>
       ${(p.images && p.images.length)
           ? `<div class="pgal">${p.images.map(s => `<a href="${s}" target="_blank"><img src="${s}" alt=""></a>`).join("")}</div>`
@@ -364,7 +376,7 @@ function linkify(s) {
     showPdfs();                       // PDF 는 시간이 걸리므로 글을 먼저 보여주고 이어서 그린다
     setupShare(p);
     const meProfile = user ? await myProfile() : null;
-    const canEdit = !!(user && (p.author_id === user.id || (meProfile && meProfile.is_admin)));
+    const canEdit = !!(user && (p.author_id === user.id || myAnonPost || (meProfile && meProfile.is_admin)));
     if (canEdit) {
       document.getElementById("actions").style.display = "flex";
       // 운영진 : 이 글을 목록 맨 위 「알림」 으로 고정
@@ -594,7 +606,7 @@ function linkify(s) {
        「사진첩 보기」 단추 하나만 깔끔하게 보입니다. */
     {
       const slot = document.getElementById("albumLink");
-      const canLink = !!(meProfile && (meProfile.is_admin ||
+      const canLink = !!(meProfile && (meProfile.is_admin || myAnonPost ||
                         (user && p.author_id === user.id)));
       const draw = (key, cat, title) => {
         if (!slot) return;
@@ -784,6 +796,18 @@ function linkify(s) {
     const guestOK = ["jobs", "exam"].includes(p.category);
     const canWrite = !!(profile && profile.approved) && !isAssoc && !(isGuest && !guestOK);
 
+    // 익명 댓글 — 공지사항 · 활동 이력에는 두지 않습니다. 제 익명 글에 다는 댓글은 처음부터 익명으로.
+    const ANON_OFF = ["notice", "history"];
+    const anonOK = !ANON_OFF.includes(p.category);
+    {
+      const l = document.getElementById("cmtAnonLbl");
+      const cb = document.getElementById("cmtAnon");
+      if (l && canWrite && anonOK) {
+        l.style.display = "inline-flex";
+        if (cb && myAnonPost) cb.checked = true;
+      }
+    }
+
     if (!canWrite) {
       formBox.innerHTML = isAssoc
         ? '<div class="cmt-login">준회원은 댓글을 쓰지 않습니다 — 읽기는 모두 열려 있습니다.</div>'
@@ -795,8 +819,9 @@ function linkify(s) {
     }
 
     async function loadComments() {
+      // "*" 로 받습니다 — is_anon 칸이 아직 없는 DB 에서도 그대로 돌아가도록
       const { data, error } = await sb.from("comments")
-        .select("id,author_id,author_name,content,created_at")
+        .select("*")
         .eq("post_id", p.id).order("created_at", { ascending: true });
       if (error) {
         // 표가 아직 없으면 원인을 정확히 알려준다 (로그인 문제로 오해하지 않도록)
@@ -808,7 +833,22 @@ function linkify(s) {
       }
       document.getElementById("cmtCount").textContent = data.length;
       if (!data.length) { listEl.innerHTML = '<div class="cmt-empty">첫 댓글을 남겨보세요.</div>'; return; }
-      const isMine  = (c) => !!(user && c.author_id === user.id);
+      // 익명 댓글 — 돌아오는 줄은 「내가 쓴 것」 이거나 「운영진이 보는 중」 입니다
+      const anonMap = {};
+      const anonIds = data.filter(c => c.is_anon).map(c => c.id);
+      if (anonIds.length && user) {
+        const { data: ar } = await sb.from("anon_authors").select("row_id,author_id,author_name")
+          .eq("kind", "comment").in("row_id", anonIds);
+        (ar || []).forEach(r => { anonMap[r.row_id] = r; });
+      }
+      const isMine  = (c) => !!(user && (c.author_id === user.id ||
+                                (anonMap[c.id] && anonMap[c.id].author_id === user.id)));
+      const anonTag = (c) => {
+        const a = anonMap[c.id];
+        if (!a) return "";
+        return isMine(c) ? ' <small style="color:#8a8574;font-weight:400;">(나)</small>'
+          : ` <small style="color:#b0473a;font-weight:400;" title="운영진에게만 보입니다">(운영진만 보임 · ${escapeHtml(a.author_name || "")})</small>`;
+      };
       const isAdmin = () => !!(user && meProfile && meProfile.is_admin);
       // 제 댓글은 스스로 고치고, 운영진은 어느 댓글이든 고치고 지울 수 있습니다
       const canEditC = (c) => isMine(c) || isAdmin();
@@ -817,7 +857,7 @@ function linkify(s) {
         <div class="cmt" data-id="${c.id}">
           ${canDrop(c) ? `<button class="del" data-id="${c.id}">삭제</button>` : ""}
           ${canEditC(c) ? `<button class="edit" data-id="${c.id}">수정</button>` : ""}
-          <div class="who" title="${escapeHtml(c.author_name || "")}">${escapeHtml(shortName(c.author_name) || "회원")}<span class="when">${c.created_at.slice(0,16).replace("T"," ")}</span></div>
+          <div class="who" title="${escapeHtml(c.author_name || "")}">${escapeHtml(shortName(c.author_name) || "회원")}${anonTag(c)}<span class="when">${c.created_at.slice(0,16).replace("T"," ")}</span></div>
           <div class="body">${linkify(c.content)}</div>
         </div>`).join("");
 
@@ -909,18 +949,26 @@ function linkify(s) {
         if (!text) return;
         const btn = document.getElementById("cmtSubmit");
         btn.disabled = true;
-        const { error } = await sb.from("comments").insert({
-          post_id: p.id, author_id: user.id, author_name: profile.name || "", content: text
-        });
+        const anonCb = document.getElementById("cmtAnon");
+        const wantAnon = !!(anonCb && anonCb.checked && anonOK);
+        const payload = { post_id: p.id, author_id: user.id, author_name: profile.name || "", content: text };
+        if (wantAnon) payload.is_anon = true;      // 익명일 때만 보냅니다 (칸이 없는 DB 대비)
+        const { error } = await sb.from("comments").insert(payload);
         btn.disabled = false;
         if (error) {
           msg.className = "msg err";
-          msg.textContent = /schema cache|does not exist/i.test(error.message || "")
+          msg.textContent = /is_anon/.test(error.message || "")
+            ? "익명 댓글이 아직 켜지지 않았습니다 — 운영진이 auth/anon_posting.sql 을 한 번 실행해주세요."
+            : /schema cache|does not exist/i.test(error.message || "")
             ? "댓글 기능이 아직 켜지지 않았습니다 — 운영진이 YB/board/sql/comments_setup.sql 을 한 번 실행해주세요."
             : "등록 실패: " + error.message;
         }
-        else { input.value = ""; msg.className = "msg"; msg.textContent = ""; noteActivity("comment", 1, p.id);
-        loadComments(); }
+        else {
+          input.value = ""; msg.className = "msg"; msg.textContent = "";
+          // 익명 댓글은 참여 점수에 넣지 않습니다 — 점수 변화로 쓴 사람을 짐작할 수 있어서
+          if (!wantAnon) noteActivity("comment", 1, p.id);
+          loadComments();
+        }
       });
     }
   }

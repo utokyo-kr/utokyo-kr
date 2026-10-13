@@ -78,6 +78,16 @@
         <input id="visInfo" value="회원 전용" disabled style="background:#f2efe8;color:#8a8574;">
       </div>
 
+      <!-- 익명으로 쓰기 — 공지사항 · 활동 이력에서는 숨깁니다 -->
+      <div id="anonRow" style="margin-top:14px;display:none;">
+        <label for="isAnon" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin:0;">
+          <input type="checkbox" id="isAnon" style="width:auto;margin:0;"> 익명으로 쓰기
+        </label>
+        <div style="font-size:12.5px;font-weight:300;color:#8a8574;margin-top:4px;line-height:1.6;">
+          다른 회원에게는 글쓴이가 ‘익명’으로 보입니다. 신고·관리를 위해 운영진은 글쓴이를 확인할 수 있습니다.
+        </div>
+      </div>
+
       <label>내용 *</label>
       <textarea id="content" required></textarea>
 
@@ -100,7 +110,7 @@
 </div>
 
 <script type="module">
-import { initWrite } from "/YB/board/write-core.js?v=331";
+import { initWrite } from "/YB/board/write-core.js?v=332";
 initWrite("YB");
 </script>
 

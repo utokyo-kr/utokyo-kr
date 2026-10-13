@@ -80,7 +80,11 @@
     <div id="cmtList"></div>
     <div id="cmtFormBox">
       <textarea id="cmtInput" placeholder="댓글을 입력하세요"></textarea>
-      <div style="text-align:right;margin-top:8px;">
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-top:8px;">
+        <label id="cmtAnonLbl" for="cmtAnon" title="다른 회원에게는 익명으로 보입니다. 운영진은 신고·관리를 위해 쓴 사람을 확인할 수 있습니다."
+               style="display:none;align-items:center;gap:6px;font-size:13px;color:#5b6474;cursor:pointer;margin:0;">
+          <input type="checkbox" id="cmtAnon" style="width:auto;margin:0;"> 익명
+        </label>
         <button class="btn dark" id="cmtSubmit">댓글 등록</button>
       </div>
       <div class="msg" id="cmtMsg"></div>
@@ -89,7 +93,7 @@
 </div>
 
 <script type="module">
-import { initPost } from "/YB/board/post-core.js?v=331";
+import { initPost } from "/YB/board/post-core.js?v=332";
 initPost("YB");
 </script>
 
