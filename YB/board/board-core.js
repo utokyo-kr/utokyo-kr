@@ -2,9 +2,9 @@ import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
 // ─── 게시판 목록 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 // 그래서 한쪽만 고쳐져 서로 어긋나는 일이 생기지 않습니다.
-import { applyNav } from "/YB/board/nav.js?v=331";
-import { boardInfo, boardTags, tagInfo } from "/YB/board/board-info.js?v=331";
-import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js?v=331";
+import { applyNav } from "/YB/board/nav.js?v=333";
+import { boardInfo, boardTags, tagInfo } from "/YB/board/board-info.js?v=333";
+import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js?v=333";
 
 /* 옮겨온 글의 지은이에는 소속·직함이 함께 붙어 있는 경우가 많습니다.
    («학98.석02.박04.남지현 도시 Ph.D», «경희대 화공과 이용택» 처럼)
@@ -97,7 +97,7 @@ export async function initBoard(ORG) {
                             : "게시판 | 재한 도쿄대학 총동문회");
   // 참여마당 식구 — 위 메뉴의 참여마당 드롭다운과 같은 차례입니다
   const JOIN_OB = ["assembly", "club", "major", "mentoring", "forum"];
-  const JOIN_YB = ["mentoring", "counsel", "career", "event", "club", "major", "suggest"];
+  const JOIN_YB = ["mentoring", "counsel", "career", "forum", "event", "club", "major", "suggest"];
   const JOIN = ORG === "YB" ? JOIN_YB : JOIN_OB;
 
   // 운영진이 줄에서 바로 옮길 수 있는 게시판 (게시판 줄 + 참여마당)
