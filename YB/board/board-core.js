@@ -80,14 +80,17 @@ export async function initBoard(ORG) {
   const CAT_YB = { notice:"공지사항", free:"자유게시판", qna:"Q&A", jobs:"구인·채용(OB/YB)", market:"벼룩시장",
                    club:"소모임", major:"전공별모임(OB/YB)", event:"행사", history:"활동 이력", mentoring:"멘토멘티(OB/YB)",
                    suggest:"학생회에 바란다", exam:"수험생 게시판",
-                   career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)", scholarship:"장학·연구지원" };
+                   career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)", scholarship:"장학·연구지원",
+                   forum:"포럼·세미나(OB)", seminar:"포럼·세미나(OB)" };
   const TABS_OB = ["notice","free","jobs","condolence","research","suggest"];   // 참여마당 식구는 위 메뉴에서 들어옵니다
   const TABS_YB = ["jobs","free","qna","scholarship","market","exam","notice"];   // 소모임·행사·멘토멘티·바란다는 참여마당에서 들어옵니다
   const CAT = ORG === "YB" ? CAT_YB : CAT_OB;
   // 총동문회와 학생회가 함께 쓰는 게시판 — 이 분류에서는 양쪽 글을 모두 보여준다
   // 두 단체가 함께 쓰는 게시판은 이 둘뿐입니다.
   //   그 밖에는 총동문회와 학생회가 저마다 제 게시판을 씁니다.
-  const SHARED = ["mentoring", "jobs", "major", "career", "counsel"];
+  const SHARED = ["mentoring", "jobs", "major", "career", "counsel", "forum", "seminar"];
+  // 총동문회 포럼·세미나 — 학생회에서는 읽기만 합니다 (글은 동문회 쪽에서 씁니다)
+  const READ_ONLY_YB = ["forum", "seminar"];
   const TABS = ORG === "YB" ? TABS_YB : TABS_OB;
 
   applyNav(ORG, ORG === "YB" ? "게시판 | 도쿄대학 한국인학생회"
@@ -396,6 +399,7 @@ export async function initBoard(ORG) {
   (async () => {
     const btn = document.getElementById("writeBtn");
     if (!btn) return;
+    if (ORG === "YB" && READ_ONLY_YB.includes(cat)) { btn.hidden = true; return; }
     let mine = null;
     try { mine = await myProfile(); } catch (e) { return; }
     if (!mine || mine.is_admin) return;

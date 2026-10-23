@@ -182,7 +182,7 @@ export async function initPost(ORG) {
                 club:"소모임", major:"전공별모임", event:"행사", history:"활동 이력",
                 mentoring:"멘토멘티(OB/YB)", suggest:"학생회에 바란다",
                 exam:"수험생 게시판", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)",
-                scholarship:"장학·연구지원" };
+                scholarship:"장학·연구지원", forum:"포럼·세미나(OB)", seminar:"포럼·세미나(OB)" };
 
   // ── 큰 제목 : 지금 보고 있는 글이 속한 게시판 이름으로 ──
   // 글을 열면 "게시판"으로만 나와서 어디에 있는지 알 수 없던 것을 고칩니다
@@ -324,7 +324,7 @@ function linkify(s) {
   const isGuest = mtype === "GUEST";                 // 도쿄대 출신이 아닌 준회원
   const GUEST_CATS = ["notice", "exam", "scholarship"];   // 준회원께 열어드리는 곳
   const side = mtype === "YB" ? "YB" : "OB";
-  const SHARED_CATS = ["mentoring", "jobs", "major", "career", "counsel"];   // 두 단체가 함께 쓰는 곳
+  const SHARED_CATS = ["mentoring", "jobs", "major", "career", "counsel", "forum", "seminar"];   // 두 단체가 함께 쓰는 곳
   const pcat = (p && p.category) || "";
   /* 익명 글 — 실제 글쓴이는 anon_authors 표에 있고, 본인과 운영진에게만 읽힙니다.
      그래서 이 표에서 한 줄이 돌아오면 「내가 쓴 글」 이거나 「운영진이 보는 중」 입니다. */

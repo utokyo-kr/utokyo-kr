@@ -20,7 +20,7 @@ create policy "read posts" on public.posts for select
     or (
       public.is_approved()
       and (
-        category in ('mentoring', 'jobs', 'major', 'career', 'counsel')   -- 함께 쓰는 게시판
+        category in ('mentoring', 'jobs', 'major', 'career', 'counsel', 'forum', 'seminar')   -- 함께 쓰는 게시판
         or case when coalesce(posts.org, 'OB') = 'YB' then 'YB' else 'OB' end
              = public.my_side()
       )
