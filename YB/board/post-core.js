@@ -2,9 +2,9 @@
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/YB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js";
-import { applyNav } from "/YB/board/nav.js?v=334";
-import { boardTags } from "/YB/board/board-info.js?v=334";
-import { findDates } from "/YB/board/calendar.js?v=334";
+import { applyNav } from "/YB/board/nav.js?v=335";
+import { boardTags } from "/YB/board/board-info.js?v=335";
+import { findDates } from "/YB/board/calendar.js?v=335";
 
 /** 글자를 화면에 안전하게 넣기 위한 다듬기 */
 function esc(t) {
@@ -32,13 +32,13 @@ function attachedImages(list, skip) {
   return `<div class="pgal">${cells}</div>`;
 }
 
-/** 본문 속 [사진1] · [그림 2] 자리에 붙인 사진을 끼워 넣는다.
+/** 본문 속 [사진1] · [그림 2] 자리에 붙인 사진을 끼워 넣는다. (주소를 이미 이어 둔 본문을 받습니다)
  *  번호는 첨부 목록에서 사진만 세어 1부터 매깁니다. 본문에 들어간 사진은
  *  아래 사진 묶음에서 빠지고, 맞는 사진이 없는 자리표시는 글자 그대로 남습니다. */
-function inlineImages(content, files) {
+function inlineImages(html, files) {
   const imgs = (Array.isArray(files) ? files : []).filter(isImageFile);
   const used = new Set();
-  const html = linkify(content).replace(/\[(?:사진|그림|이미지)\s*(\d{1,2})\]/g, (m, n) => {
+  const out = html.replace(/\[(?:사진|그림|이미지)\s*(\d{1,2})\]/g, (m, n) => {
     const f = imgs[+n - 1];
     if (!f) return m;
     used.add(f.path);
@@ -46,7 +46,7 @@ function inlineImages(content, files) {
     return `<a href="${data.publicUrl}" target="_blank" rel="noopener" class="pinl">` +
            `<img src="${data.publicUrl}" alt="${esc(f.name)}" loading="lazy"></a>`;
   });
-  return { html, used };
+  return { html: out, used };
 }
 
 /** 붙인 파일이 PDF 문서인지 */
@@ -370,7 +370,7 @@ function linkify(s) {
     box.innerHTML = '<div class="empty">글을 찾을 수 없거나 열람 권한이 없습니다.<br><br><a class="btn line" href="' + HOME + '/board.html">목록으로</a>' +
       (user ? "" : ' <a class="btn dark" href="/YB/auth/login.html">로그인</a>') + '</div>';
   } else {
-    const inl = inlineImages(p.content, p.files);   // [사진N] 자리에 붙인 사진을 끼웁니다
+    const inl = inlineImages(linkify(p.content), p.files);   // [사진N] 자리에 붙인 사진을 끼웁니다
     box.innerHTML = `
       <div>
         <span class="chip org-${p.org}">${p.org === "ALL" ? "공통" : p.org}</span>
