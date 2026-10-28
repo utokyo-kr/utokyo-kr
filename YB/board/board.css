@@ -187,6 +187,10 @@ body.yb .list .row .t a:hover{color:#1e5230;}
   .fitem .fx{flex:none;border:none;background:none;color:#b0a98f;cursor:pointer;
     font-size:15px;line-height:1;padding:2px 4px;font-family:inherit;}
   .fitem .fx:hover{color:#8a3b32;}
+  .fitem .fno{color:#2a6b40;font-weight:600;margin-right:2px;}
+  .fitem .fput{flex:none;border:1px solid #cfe3d4;background:#f3f8f4;color:#2a6b40;border-radius:6px;
+    padding:3px 9px;font-size:12px;cursor:pointer;font-family:inherit;}
+  .fitem .fput:hover{background:#e4f0e7;}
   body.yb .fdrop:hover,body.yb .fdrop.on{border-color:#4f9d5d;background:#f6fbf7;}
 
 /* 첨부파일 */
@@ -578,3 +582,7 @@ body.yb .legend .pieitem:hover{background:#eef7f0;color:#2a6b40;}
   .mhead nav > a,.mhead nav .dd > a{transform:scaleX(.82);padding-left:3px;padding-right:3px;}
 }
 
+
+/* 본문 중간에 들어간 사진 — [사진N] 자리 */
+.post .body .pinl{display:block;margin:12px 0;border-bottom:none;}
+.post .body .pinl img{max-width:100%;height:auto;display:block;border-radius:3px;border:1px solid #eee9dd;}

@@ -76,7 +76,7 @@ create policy "read posts" on public.posts for select
     or (
       public.is_approved()
       and (
-        category in ('mentoring', 'jobs', 'major', 'career', 'counsel', 'forum', 'seminar')               -- 함께 쓰는 게시판(OB/YB)
+        category in ('mentoring', 'alumni', 'jobs', 'major', 'career', 'counsel', 'forum', 'seminar')     -- 함께 쓰는 게시판(OB/YB)
         or case when coalesce(posts.org, 'OB') = 'YB' then 'YB' else 'OB' end = public.my_side()
       )
       and (category <> 'free' or public.is_member())                                  -- 자유게시판은 준회원 이상

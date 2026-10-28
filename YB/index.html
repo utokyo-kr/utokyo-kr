@@ -696,6 +696,7 @@
           <a href="/YB/board.html?cat=parttime">아르바이트</a>
           <a href="/YB/board.html?cat=market">벼룩시장</a>
           <a href="/YB/board.html?cat=mentoring">멘토멘티(OB/YB)</a>
+          <a href="/YB/board.html?cat=alumni">이달의 동문(OB/YB)</a>
           <a href="/YB/board.html?cat=suggest">학생회에 바란다</a>
         </div>
       </div>
@@ -1410,7 +1411,7 @@
 
 <script type="module">
 
-import { initCalendar } from "/YB/board/calendar.js?v=333";
+import { initCalendar } from "/YB/board/calendar.js?v=334";
 
 // ─── 일정 달력 ───
 initCalendar("#calTop", { mode: "mini", upcoming: false, titles: true });
@@ -1424,7 +1425,7 @@ import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
     notice:"공지사항", free:"자유게시판", qna:"Q&A", jobs:"구인·채용", market:"벼룩시장",
     scholarship:"장학정보", exam:"수험생", history:"활동 이력", career:"진학/취업 후기", counsel:"진로상담",
   };
-  const JOIN_CATS  = ["mentoring", "major", "event", "club", "suggest"];
+  const JOIN_CATS  = ["mentoring", "alumni", "major", "event", "club", "suggest"];
   const BOARD_CATS = ["notice", "free", "qna", "jobs", "market", "scholarship", "exam"];
   const SHARED = ["mentoring", "jobs", "major"];      // 두 단체가 함께 쓰는 게시판
   const esc = s => (s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1526,7 +1527,7 @@ try {
 
 // 역대 회장 및 임원진 — 회장 목록과 게시판 모양의 명단 자료
 try {
-  const { initCouncil } = await import("/YB/council.js?v=333");
+  const { initCouncil } = await import("/YB/council.js?v=334");
   await initCouncil();
 } catch (e) { /* 자료를 불러오지 못해도 나머지 화면은 그대로 */ }
 
@@ -1556,7 +1557,7 @@ try {
 
 <script type="module">
   // 상단 메뉴는 board/nav.js 한 곳에서만 정합니다 (화면마다 달라지지 않도록)
-  import { applyMenu } from "/YB/board/nav.js?v=333";
+  import { applyMenu } from "/YB/board/nav.js?v=334";
   applyMenu("YB");
 </script>
 </body>

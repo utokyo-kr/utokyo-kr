@@ -2,8 +2,8 @@ import { sb, currentUser, myProfile } from "/OB/auth/auth.js";
 // ─── 게시판 목록 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 // 그래서 한쪽만 고쳐져 서로 어긋나는 일이 생기지 않습니다.
-import { applyNav } from "/OB/board/nav.js?v=331";
-import { boardInfo, boardTags, tagInfo } from "/OB/board/board-info.js?v=331";
+import { applyNav } from "/OB/board/nav.js?v=332";
+import { boardInfo, boardTags, tagInfo } from "/OB/board/board-info.js?v=332";
 
 /* 옮겨온 글의 지은이에는 소속·직함이 함께 붙어 있는 경우가 많습니다.
    («학98.석02.박04.남지현 도시 Ph.D», «경희대 화공과 이용택» 처럼)
@@ -54,7 +54,7 @@ async function drawAssembly(cat) {
   if (old) old.remove();
   if (cat !== "assembly" || ORG !== "OB") return;
   let mod = null;
-  try { mod = await import("/OB/board/assembly-intro.js?v=331"); } catch (e) { return; }
+  try { mod = await import("/OB/board/assembly-intro.js?v=332"); } catch (e) { return; }
   if (!document.getElementById("asmIntroCss")) {
     const st = document.createElement("style");
     st.id = "asmIntroCss";
@@ -93,28 +93,28 @@ export async function initBoard(ORG) {
 
 
   // ── 조직별 게시판 구성 ──
-  const CAT_OB = { assembly:"총회", notice:"공지사항", free:"자유게시판", club:"소모임", major:"전공별모임(OB/YB)", mentoring:"멘토멘티(OB/YB)", condolence:"경조사",
+  const CAT_OB = { assembly:"총회", notice:"공지사항", free:"자유게시판", club:"소모임", major:"전공별모임(OB/YB)", mentoring:"멘토멘티(OB/YB)", alumni:"이달의 동문(OB/YB)", condolence:"경조사",
                    forum:"포럼·세미나",
                    jobs:"구인·채용(OB/YB)", faculty:"단과대별", news:"소식", market:"장터",
                    research:"단행본 및 연구소개",
                    suggest:"동문회에 바란다" };
   const CAT_YB = { notice:"공지사항", free:"자유게시판", qna:"Q&A", jobs:"구인·채용(OB/YB)", market:"벼룩시장",
                    club:"소모임", major:"전공별모임(OB/YB)", event:"행사", history:"활동 이력",
-                   mentoring:"멘토멘티(OB/YB)", suggest:"학생회에 바란다" };
+                   mentoring:"멘토멘티(OB/YB)", alumni:"이달의 동문(OB/YB)", suggest:"학생회에 바란다" };
   const TABS_OB = ["notice","free","jobs","condolence","research","suggest"];   // 참여마당 식구는 위 메뉴에서 들어옵니다
   const TABS_YB = ["jobs","free","qna","scholarship","market","exam","notice"];   // 소모임·행사·멘토멘티·바란다는 참여마당에서 들어옵니다
   const CAT = ORG === "YB" ? CAT_YB : CAT_OB;
   // 총동문회와 학생회가 함께 쓰는 게시판 — 이 분류에서는 양쪽 글을 모두 보여준다
   // 두 단체가 함께 쓰는 게시판은 이 둘뿐입니다.
   //   그 밖에는 총동문회와 학생회가 저마다 제 게시판을 씁니다.
-  const SHARED = ["mentoring", "jobs", "major"];
+  const SHARED = ["mentoring", "alumni", "jobs", "major"];
   const TABS = ORG === "YB" ? TABS_YB : TABS_OB;
 
   applyNav(ORG, ORG === "YB" ? "게시판 | 도쿄대학 한국인학생회"
                             : "게시판 | 재한 도쿄대학 총동문회");
   // 참여마당 식구 — 위 메뉴의 참여마당 드롭다운과 같은 차례입니다
-  const JOIN_OB = ["assembly", "club", "major", "mentoring", "forum"];
-  const JOIN_YB = ["mentoring", "event", "club", "major", "suggest"];
+  const JOIN_OB = ["assembly", "club", "major", "mentoring", "alumni", "forum"];
+  const JOIN_YB = ["mentoring", "alumni", "event", "club", "major", "suggest"];
   const JOIN = ORG === "YB" ? JOIN_YB : JOIN_OB;
 
   // 운영진이 줄에서 바로 옮길 수 있는 게시판 (게시판 줄 + 참여마당)

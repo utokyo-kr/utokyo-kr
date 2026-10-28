@@ -1,8 +1,8 @@
 // ─── 게시판 글쓰기 화면 (총동문회 OB · 학생회 YB 공용 엔진) ────────
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/YB/auth/auth.js";
-import { applyNav } from "/YB/board/nav.js?v=333";
-import { boardInfo, tagInfo } from "/YB/board/board-info.js?v=333";
+import { applyNav } from "/YB/board/nav.js?v=334";
+import { boardInfo, tagInfo } from "/YB/board/board-info.js?v=334";
 
 export async function initWrite(ORG) {
   const HOME = ORG === "YB" ? "/YB" : "/OB";
@@ -83,8 +83,8 @@ export async function initWrite(ORG) {
     orgTabs.forEach(a => a.addEventListener("click", (e) => { e.preventDefault(); setOrg(a.dataset.org); }));
 
     // 게시판 분류 · 말머리 선택 (조직별)
-    const CATS_OB = { assembly:"총회", free:"자유게시판", club:"소모임", major:"전공별모임(OB/YB)", mentoring:"멘토멘티(OB/YB)", forum:"포럼·세미나", jobs:"구인·채용(OB/YB)", condolence:"경조사", notice:"공지사항", research:"단행본 및 연구소개", suggest:"동문회에 바란다" };
-    const CATS_YB = { mentoring:"멘토멘티(OB/YB)", event:"행사", club:"소모임", major:"전공별모임(OB/YB)", suggest:"학생회에 바란다", jobs:"구인·채용(OB/YB)", free:"자유게시판", qna:"Q&A", scholarship:"장학·연구지원", market:"벼룩시장", exam:"수험생 게시판", notice:"공지사항", history:"활동 이력", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)" };
+    const CATS_OB = { assembly:"총회", free:"자유게시판", club:"소모임", major:"전공별모임(OB/YB)", mentoring:"멘토멘티(OB/YB)", alumni:"이달의 동문(OB/YB)", forum:"포럼·세미나", jobs:"구인·채용(OB/YB)", condolence:"경조사", notice:"공지사항", research:"단행본 및 연구소개", suggest:"동문회에 바란다" };
+    const CATS_YB = { mentoring:"멘토멘티(OB/YB)", alumni:"이달의 동문(OB/YB)", event:"행사", club:"소모임", major:"전공별모임(OB/YB)", suggest:"학생회에 바란다", jobs:"구인·채용(OB/YB)", free:"자유게시판", qna:"Q&A", scholarship:"장학·연구지원", market:"벼룩시장", exam:"수험생 게시판", notice:"공지사항", history:"활동 이력", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)" };
     const CATS = ORG === "YB" ? CATS_YB : CATS_OB;
 
     const TAGS_OB = {
@@ -92,7 +92,8 @@ export async function initWrite(ORG) {
       free: ["일상", "질문", "정보공유", "후기", "기타"],
       club: ["골프", "등산", "친목", "운영진", "기타"],
       major: ["농학부", "건축학", "도시환경토목(C.U.E)", "전기·기계", "항공우주", "정보이공", "의학·약학·간호학", "이학부", "화학·응용화학·재료", "생산·선단과학·기술기타", "법학·정치·공공정책", "경제·경영학", "인문·사회·교육", "교양·총합문화", "기타"],
-      mentoring: ["멘토 모집", "멘티 모집", "이달의 동문", "만남의 광장", "진로상담", "취업후기", "유학", "운영관리", "기타"],
+      mentoring: ["멘토 모집", "멘티 모집", "만남의 광장", "진로상담", "취업후기", "유학", "운영관리", "기타"],
+      alumni: ["소개", "인터뷰", "근황", "기타"],
       jobs: ["아르바이트", "일본채용", "한국채용", "인턴", "설명회", "기업홍보", "기타"],
       condolence: ["부고", "결혼", "출산", "축하", "기타"],
       notice: ["총회", "회비", "행사", "안내", "기타"],
@@ -101,7 +102,8 @@ export async function initWrite(ORG) {
       suggest: ["건의", "문의", "아이디어", "불편", "칭찬", "기타"]
     };
     const TAGS_YB = {
-      mentoring: ["멘토 모집", "멘티 모집", "이달의 동문", "만남의 광장", "진로상담", "진학/취업 후기", "유학", "기타"],
+      mentoring: ["멘토 모집", "멘티 모집", "만남의 광장", "진로상담", "진학/취업 후기", "유학", "기타"],
+      alumni: ["소개", "인터뷰", "근황", "기타"],
       event: ["행사 안내", "참가 모집", "후기", "기타"],
       club: ["운동", "종교", "학술", "친목", "기타"],
       major: ["농학부", "건축학", "도시환경토목(C.U.E)", "전기·기계", "항공우주", "정보이공", "의학·약학·간호학", "이학부", "화학·응용화학·재료", "공학 기타", "생산·선단과학·기술기타", "법학·정치·공공정책", "경제·경영학", "인문·사회·교육", "교양·총합문화", "기타"],
@@ -221,6 +223,25 @@ export async function initWrite(ORG) {
     const sizeText = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + "MB"
                           : n >= 1024 ? Math.round(n / 1024) + "KB" : n + "B";
 
+    /** 붙인 파일이 사진인지 — 사진에만 본문 번호 [사진N] 을 매깁니다 */
+    const isImg = (f) => !!f && ((typeof f.type === "string" && f.type.indexOf("image/") === 0)
+                    || /\.(jpe?g|png|gif|webp|bmp|avif|heic|heif)$/i.test(f.name || ""));
+    const countImgs = () => files.concat(picked).filter(isImg).length;
+    /** 본문 커서 자리에 글자를 넣는다 — 줄 한가운데면 앞뒤로 줄을 바꿔 사진이 제 줄에 서게 */
+    function putInBody(text) {
+      const ta = document.getElementById("content");
+      if (!ta) return;
+      const v = ta.value;
+      const st = typeof ta.selectionStart === "number" ? ta.selectionStart : v.length;
+      const en = typeof ta.selectionEnd === "number" ? ta.selectionEnd : st;
+      const before = v.slice(0, st), after = v.slice(en);
+      const pre = before && !before.endsWith("\n") ? "\n" : "";
+      const post = after && !after.startsWith("\n") ? "\n" : "";
+      ta.value = before + pre + text + post + after;
+      const at = (before + pre + text + post).length;
+      ta.focus();
+      try { ta.setSelectionRange(at, at); } catch (e) {}
+    }
     function drawFiles() {
       if (!flist) return;
       /* 파일 이름은 글쓴이가 정한 값입니다. 그대로 꽂으면
@@ -228,15 +249,19 @@ export async function initWrite(ORG) {
       const fesc = (s) => String(s == null ? "" : s)
         .replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;",
                                      '"': "&quot;", "'": "&#39;" }[c]));
-      const rows = files.map((f, i) =>
-        `<div class="fitem"><span class="fn">${fesc(f.name)}</span>` +
-        `<span class="fs">${sizeText(f.size || 0)}</span>` +
-        `<button type="button" class="fx" data-k="old" data-i="${i}" title="빼기">✕</button></div>`)
-        .concat(picked.map((f, i) =>
-        `<div class="fitem"><span class="fn">${fesc(f.name)}</span>` +
-        `<span class="fs">${sizeText(f.size)}</span>` +
-        `<button type="button" class="fx" data-k="new" data-i="${i}" title="빼기">✕</button></div>`));
+      // 사진은 올라간 것 → 새로 고른 것 차례로 1, 2, 3… 번호를 받습니다 (저장되는 차례와 같습니다)
+      let no = 0;
+      const row = (f, k, i, size) => {
+        const n = isImg(f) ? ++no : 0;
+        return `<div class="fitem"><span class="fn">${n ? `<b class="fno">사진${n}</b> ` : ""}${fesc(f.name)}</span>` +
+          `<span class="fs">${size}</span>` +
+          (n ? `<button type="button" class="fput" data-n="${n}" title="본문 커서 자리에 [사진${n}] 을 넣습니다">본문에 넣기</button>` : "") +
+          `<button type="button" class="fx" data-k="${k}" data-i="${i}" title="빼기">✕</button></div>`;
+      };
+      const rows = files.map((f, i) => row(f, "old", i, sizeText(f.size || 0)))
+        .concat(picked.map((f, i) => row(f, "new", i, sizeText(f.size))));
       flist.innerHTML = rows.join("");
+      flist.querySelectorAll(".fput").forEach(b => b.addEventListener("click", () => putInBody(`[사진${b.dataset.n}]`)));
       flist.querySelectorAll(".fx").forEach(b => b.addEventListener("click", () => {
         const i = +b.dataset.i;
         if (b.dataset.k === "old") files.splice(i, 1); else picked.splice(i, 1);
@@ -296,13 +321,18 @@ export async function initWrite(ORG) {
         const two = (n) => String(n).padStart(2, "0");
         const stamp = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}-` +
                       `${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}`;
+        const had = countImgs();
         addFiles(shots.map((f, i) => {
           const ext = (f.type.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "") || "png";
           const named = `캡처-${stamp}${shots.length > 1 ? "-" + (i + 1) : ""}.${ext}`;
           try { return new File([f], named, { type: f.type }); }
           catch (err) { return f; }          // 옛 브라우저에서는 원래 이름 그대로
         }));
-        fdrop.scrollIntoView({ behavior: "smooth", block: "center" });
+        // 붙여넣은 캡처는 본문 커서 자리에 바로 [사진N] 으로 들어갑니다
+        const marks = [];
+        for (let n = had + 1; n <= countImgs(); n++) marks.push(`[사진${n}]`);
+        if (marks.length) putInBody(marks.join("\n"));
+        else fdrop.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     }
 

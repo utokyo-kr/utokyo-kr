@@ -12,7 +12,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <title>글쓰기 | 재한 도쿄대학 총동문회</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/OB/board/board.css?v=331">
+<link rel="stylesheet" href="/OB/board/board.css?v=332">
 </head>
 <body>
 
@@ -79,7 +79,7 @@
         <input id="visInfo" value="회원 전용" disabled style="background:#f2efe8;color:#8a8574;">
       </div>
 
-      <label>내용 *</label>
+      <label>내용 * <span style="font-weight:300;color:#9a947f;">(붙인 사진을 글 중간에 넣으려면 [사진1] 처럼 적거나, 첨부 목록의 「본문에 넣기」를 누르세요)</span></label>
       <textarea id="content" required></textarea>
 
       <label>파일 첨부 <span style="font-weight:300;color:#9a947f;">(한 개당 25MB 까지 · 여러 개 고를 수 있습니다)</span></label>
@@ -101,7 +101,7 @@
 </div>
 
 <script type="module">
-import { initWrite } from "/OB/board/write-core.js?v=331";
+import { initWrite } from "/OB/board/write-core.js?v=332";
 initWrite("OB");
 </script>
 

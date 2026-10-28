@@ -2,9 +2,9 @@
 // 화면 파일은 OB/ · YB/ 폴더에 따로 두고, 동작은 이 파일 하나를 함께 씁니다.
 import { sb, currentUser, myProfile, noteActivity, fixEnter } from "/YB/auth/auth.js";
 import { loadLikes, toggleLike, heart } from "/YB/auth/likes.js";
-import { applyNav } from "/YB/board/nav.js?v=333";
-import { boardTags } from "/YB/board/board-info.js?v=333";
-import { findDates } from "/YB/board/calendar.js?v=333";
+import { applyNav } from "/YB/board/nav.js?v=334";
+import { boardTags } from "/YB/board/board-info.js?v=334";
+import { findDates } from "/YB/board/calendar.js?v=334";
 
 /** 글자를 화면에 안전하게 넣기 위한 다듬기 */
 function esc(t) {
@@ -19,10 +19,10 @@ function isImageFile(f) {
   return /\.(jpe?g|png|gif|webp|bmp|avif|heic|heif)$/i.test(f.name || f.path || "");
 }
 
-/** 붙인 사진은 내려받지 않아도 글 밑에서 바로 보이게 한다 */
-function attachedImages(list) {
+/** 붙인 사진은 내려받지 않아도 글 밑에서 바로 보이게 한다 (본문에 이미 들어간 사진은 뺍니다) */
+function attachedImages(list, skip) {
   if (!Array.isArray(list)) return "";
-  const imgs = list.filter(isImageFile);
+  const imgs = list.filter(isImageFile).filter(f => !(skip && skip.has(f.path)));
   if (!imgs.length) return "";
   const cells = imgs.map(f => {
     const { data } = sb.storage.from("board").getPublicUrl(f.path);
@@ -30,6 +30,23 @@ function attachedImages(list) {
            `<img src="${data.publicUrl}" alt="${esc(f.name)}" loading="lazy"></a>`;
   }).join("");
   return `<div class="pgal">${cells}</div>`;
+}
+
+/** 본문 속 [사진1] · [그림 2] 자리에 붙인 사진을 끼워 넣는다.
+ *  번호는 첨부 목록에서 사진만 세어 1부터 매깁니다. 본문에 들어간 사진은
+ *  아래 사진 묶음에서 빠지고, 맞는 사진이 없는 자리표시는 글자 그대로 남습니다. */
+function inlineImages(content, files) {
+  const imgs = (Array.isArray(files) ? files : []).filter(isImageFile);
+  const used = new Set();
+  const html = linkify(content).replace(/\[(?:사진|그림|이미지)\s*(\d{1,2})\]/g, (m, n) => {
+    const f = imgs[+n - 1];
+    if (!f) return m;
+    used.add(f.path);
+    const { data } = sb.storage.from("board").getPublicUrl(f.path);
+    return `<a href="${data.publicUrl}" target="_blank" rel="noopener" class="pinl">` +
+           `<img src="${data.publicUrl}" alt="${esc(f.name)}" loading="lazy"></a>`;
+  });
+  return { html, used };
 }
 
 /** 붙인 파일이 PDF 문서인지 */
@@ -180,7 +197,7 @@ export async function initPost(ORG) {
   const CAT = { notice:"공지사항", free:"자유게시판", qna:"Q&A", jobs:"취업정보",
                 parttime:"아르바이트", market:"벼룩시장",
                 club:"소모임", major:"전공별모임", event:"행사", history:"활동 이력",
-                mentoring:"멘토멘티(OB/YB)", suggest:"학생회에 바란다",
+                mentoring:"멘토멘티(OB/YB)", alumni:"이달의 동문(OB/YB)", suggest:"학생회에 바란다",
                 exam:"수험생 게시판", career:"진학/취업 후기(OB/YB)", counsel:"진로상담(OB/YB)",
                 scholarship:"장학·연구지원", forum:"포럼·세미나(OB)", seminar:"포럼·세미나(OB)" };
 
@@ -231,6 +248,7 @@ export async function initPost(ORG) {
     if (!box || !p) return;
     const url = location.origin + HOME + "/post.html?id=" + p.id;
     const plain = String(p.content || "")
+      .replace(/\[(?:사진|그림|이미지)\s*\d{1,2}\]/g, " ")
       .replace(/<[^>]*>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 300);
     const body = `${p.title}
 
@@ -324,7 +342,7 @@ function linkify(s) {
   const isGuest = mtype === "GUEST";                 // 도쿄대 출신이 아닌 준회원
   const GUEST_CATS = ["notice", "exam", "scholarship"];   // 준회원께 열어드리는 곳
   const side = mtype === "YB" ? "YB" : "OB";
-  const SHARED_CATS = ["mentoring", "jobs", "major", "career", "counsel", "forum", "seminar"];   // 두 단체가 함께 쓰는 곳
+  const SHARED_CATS = ["mentoring", "alumni", "jobs", "major", "career", "counsel", "forum", "seminar"];   // 두 단체가 함께 쓰는 곳
   const pcat = (p && p.category) || "";
   /* 익명 글 — 실제 글쓴이는 anon_authors 표에 있고, 본인과 운영진에게만 읽힙니다.
      그래서 이 표에서 한 줄이 돌아오면 「내가 쓴 글」 이거나 「운영진이 보는 중」 입니다. */
@@ -352,6 +370,7 @@ function linkify(s) {
     box.innerHTML = '<div class="empty">글을 찾을 수 없거나 열람 권한이 없습니다.<br><br><a class="btn line" href="' + HOME + '/board.html">목록으로</a>' +
       (user ? "" : ' <a class="btn dark" href="/YB/auth/login.html">로그인</a>') + '</div>';
   } else {
+    const inl = inlineImages(p.content, p.files);   // [사진N] 자리에 붙인 사진을 끼웁니다
     box.innerHTML = `
       <div>
         <span class="chip org-${p.org}">${p.org === "ALL" ? "공통" : p.org}</span>
@@ -359,11 +378,11 @@ function linkify(s) {
       </div>
       <h2>${escapeHtml(p.title)}</h2>
       <div class="pmeta"><span title="${escapeHtml(p.author_name || "")}">${escapeHtml(shortName(p.author_name))}</span>${anonNote} · ${p.created_at.slice(0,16).replace("T"," ")}</div>
-      <div class="body">${linkify(p.content)}</div>
+      <div class="body">${inl.html}</div>
       ${(p.images && p.images.length)
           ? `<div class="pgal">${p.images.map(s => `<a href="${s}" target="_blank"><img src="${s}" alt=""></a>`).join("")}</div>`
           : (p.image_url ? `<div class="pgal"><a href="${p.image_url}" target="_blank"><img src="${p.image_url}" alt=""></a></div>` : "")}
-      ${attachedImages(p.files)}
+      ${attachedImages(p.files, inl.used)}
       ${attachedPdfs(p.files)}
       ${fileBox(p.files)}
       <div id="albumLink"></div>
