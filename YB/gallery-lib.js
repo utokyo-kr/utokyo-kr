@@ -69,8 +69,7 @@ export async function loadGallery() {
         key, cat: p.cat, year: y,
         title: ov.title || (ALBUM_NAME[p.cat] || "{y}년").replace("{y}", y),
         coverKey: ov.cover_key || "",
-        sort: ov.sort != null ? ov.sort : 0,
-        photos: [],
+        sort: ov.sort != null ? ov.sort : 0, note: ov.note || "", photos: [],
       });
     }
     map.get(key).photos.push(p);
