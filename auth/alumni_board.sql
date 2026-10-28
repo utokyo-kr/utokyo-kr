@@ -12,6 +12,29 @@
 --  실행 : Supabase 대시보드 → SQL Editor → 붙여넣기 → Run (여러 번 돌려도 됩니다)
 -- ═══════════════════════════════════════════════════════════
 
+-- ── ⓪ 허용 게시판 목록(check 제약)에 alumni 를 더합니다 ──
+--    posts_category_check 는 글의 category 가 정해진 목록 안에 있어야만 저장되게 합니다.
+--    지금 걸린 목록을 그대로 읽어 'mentoring' 바로 뒤에 'alumni' 를 끼워 다시 겁니다.
+do $$
+declare def text;
+begin
+  select pg_get_constraintdef(oid) into def
+    from pg_constraint
+   where conrelid = 'public.posts'::regclass and conname = 'posts_category_check';
+  if def is null then
+    raise notice 'posts_category_check 제약이 없습니다 — 건너뜁니다';
+  elsif def like '%''alumni''%' then
+    raise notice 'alumni 는 이미 허용되어 있습니다';
+  elsif def not like '%''mentoring''%' then
+    raise exception '제약에서 mentoring 을 찾지 못했습니다 — 손으로 확인이 필요합니다: %', def;
+  else
+    def := regexp_replace(def, '(''mentoring''(::[a-z_ ]+)?)', '\1, ''alumni''\2');
+    execute 'alter table public.posts drop constraint posts_category_check';
+    execute 'alter table public.posts add constraint posts_category_check ' || def;
+    raise notice 'alumni 를 허용 목록에 더했습니다';
+  end if;
+end $$;
+
 -- ── ① 읽기 규칙 ──
 drop policy if exists "read posts" on public.posts;
 create policy "read posts" on public.posts for select
@@ -44,7 +67,10 @@ update public.posts
    and title ~ '^\s*[\[【]\s*이달의\s*동문\s*[\]】]';
 
 -- ── 확인 ──
-select policyname as "규칙", position('alumni' in qual) > 0 as "alumni 포함"
+select 'check 제약' as "항목", position('alumni' in pg_get_constraintdef(oid)) > 0 as "alumni 포함"
+  from pg_constraint where conrelid = 'public.posts'::regclass and conname = 'posts_category_check'
+union all
+select 'read posts 규칙', position('alumni' in qual) > 0
   from pg_policies where tablename = 'posts' and policyname = 'read posts';
 
 select coalesce(org, '(없음)') as "소속", count(*) as "이달의 동문 글"
