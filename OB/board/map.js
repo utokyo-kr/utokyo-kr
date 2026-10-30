@@ -57,15 +57,21 @@ export const BASEMAPS = [
   { k: "osm", n: "기본", sub: "OpenStreetMap",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     att: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' },
-  { k: "voyager", n: "부드러운 컬러", sub: "CARTO Voyager",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    att: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' },
-  { k: "positron", n: "밝은 회색", sub: "CARTO Positron",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    att: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' },
-  { k: "dark", n: "어두운", sub: "CARTO Dark",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    att: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' },
+  // 「부드러운 컬러」·「밝은 회색」·「어두운」은 원래 CARTO 지도였는데,
+  //   CARTO 가 2026년 8월 말부터 열쇠(API key) 없이 부르면 「API KEY REQUIRED」를 덮어 보냅니다.
+  //   그래서 열쇠 없이 쓰는 Esri 지도로 바꿨습니다. 이름(k)은 그대로라 고르신 것이 이어집니다.
+  //   회색·어두운 지도는 바탕과 글씨(labels)가 따로 오고, 16단계보다 가까이는 키워서 보여줍니다.
+  { k: "voyager", n: "부드러운 컬러", sub: "Esri World Street Map",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    sd: false, maxNative: 18, att: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>' },
+  { k: "positron", n: "밝은 회색", sub: "Esri Light Gray Canvas",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    labels: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+    sd: false, maxNative: 16, att: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>' },
+  { k: "dark", n: "어두운", sub: "Esri Dark Gray Canvas",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    labels: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+    sd: false, maxNative: 16, att: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>' },
   { k: "topo", n: "지형", sub: "OpenTopoMap",
     url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxZoom: 17,
     att: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' },
@@ -250,16 +256,20 @@ export async function initMap(org = "OB", mountId = "mapapp") {
   const map = L.map("cmap", { scrollWheelZoom: true, zoomControl: true })
                .setView([35.6895, 139.7], 12);
   // ── 바탕지도 고르기 ──
-  let baseLayer = null;
+  let baseLayer = null, labelLayer = null;
   function setBase(k) {
     const b = BASEMAPS.find(x => x.k === k) || BASEMAPS[0];
     if (baseLayer) map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer(b.url, {
+    if (labelLayer) { map.removeLayer(labelLayer); labelLayer = null; }
+    const opt = {
       maxZoom: b.maxZoom || 19,
+      maxNativeZoom: b.maxNative || b.maxZoom || 19,   // 그보다 가까이는 키워서
       subdomains: b.sd === false ? [] : ["a", "b", "c"],
-      attribution: b.att,
-    }).addTo(map);
+    };
+    baseLayer = L.tileLayer(b.url, { ...opt, attribution: b.att }).addTo(map);
     baseLayer.bringToBack();
+    // 바탕과 글씨가 따로 오는 지도는 글씨를 바탕 위에 얹습니다
+    if (b.labels) labelLayer = L.tileLayer(b.labels, opt).addTo(map);
     try { localStorage.setItem("utk-basemap", b.k); } catch (e) {}
   }
   const baseSel = document.getElementById("lyBase");
