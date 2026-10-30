@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>사용통계 | 도쿄대학 한국인학생회</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/YB/board/board.css?v=335">
+<link rel="stylesheet" href="/YB/board/board.css?v=331">
 <style>
   .swrap{max-width:1100px;margin:0 auto;padding:0 24px 70px;}
   .stop{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:34px 0 16px;}
@@ -173,6 +173,20 @@
   .todaybar .tb-i.zero{opacity:.45;}
   .todaybar .tb-i .tb-n{font-size:11.5px;color:#a8a291;}
   .todaybar .tb-more{margin-left:auto;font-size:12.5px;color:#a8a291;white-space:nowrap;}
+  /* Top 10 · 순위표 — 소속(OB · YB) 따로 보기. 두 단체를 함께 보시는 운영진에게만 나옵니다 */
+  .orgSeg{display:flex;margin:0 0 10px;}
+  .orgSeg a{flex:1;text-align:center;padding:6px 4px;font-size:12px;white-space:nowrap;}
+  .rankorg{margin:4px 0 12px;}
+  .rankorg .orgSeg{display:inline-flex;margin:0;}
+  .rankorg .orgSeg a{flex:none;padding:6px 14px;}
+  /* 글쓰기 Top 10 — 이름을 누르면 그분이 쓴 글 */
+  .stattop .tophint{font-size:11.5px;color:#a09a86;margin:-2px 0 6px;}
+  .stattop li.open{cursor:pointer;}
+  .stattop li.open:hover .nm,.stattop li.open:focus-visible .nm{color:#1e5230;
+    text-decoration:underline;text-underline-offset:3px;}
+  .stattop li.open:focus-visible{outline:2px solid #4f9d5d;}
+  .stattop li.pick{box-shadow:inset 3px 0 0 #4f9d5d;background:#eef6f0;}
+  #whoList{margin:16px 0 0;}
 </style>
 </head>
 <body>
@@ -217,7 +231,7 @@
 
 <script type="module">
 import { sb, currentUser, myProfile } from "/YB/auth/auth.js";
-import { applyNav, applyAuthLinks } from "/YB/board/nav.js?v=335";
+import { applyNav, applyAuthLinks } from "/YB/board/nav.js?v=331";
 
 applyNav("YB", "사용통계 | 도쿄대학 한국인학생회");
 applyAuthLinks("YB");
@@ -234,7 +248,8 @@ const KNAME = Object.fromEntries(KIND);
 const KCOLOR = { login: "#6b83a8", visit: "#c9836a", view: "#8f86b5",
                  read: "#6f9e86", comment: "#c9a961", post: "#b07f92",
                  photo: "#7a6a90", liked: "#c06a6a" };
-const CATN = { notice:"공지사항", free:"자유게시판", club:"소모임", mentoring:"멘토멘티", promo:"홍보·채용", condolence:"경조사", forum:"포럼·세미나", qna:"Q&A", jobs:"취업정보", parttime:"아르바이트", market:"벼룩시장", history:"활동 이력", suggest:"동문회에 바란다" };
+const CATN = { notice:"공지사항", free:"자유게시판", club:"소모임", mentoring:"멘토멘티", promo:"홍보·채용", condolence:"경조사", forum:"포럼·세미나", qna:"Q&A", jobs:"취업정보", parttime:"아르바이트", market:"벼룩시장", history:"활동 이력", suggest:"동문회에 바란다",
+              assembly:"총회", major:"전공별모임", faculty:"단과대별", news:"소식", research:"단행본 및 연구소개", event:"행사", scholarship:"장학", exam:"수험생" };
 const KORDER = ["login", "visit", "view", "read", "comment", "post",
                 "photo", "liked"];
 const esc = (s) => String(s == null ? "" : s)
@@ -336,6 +351,19 @@ async function start() {
   const rows = all.filter(r => !(me.is_admin && r.is_me));
   rows.sort((x, y) => (y.score || 0) - (x.score || 0));
 
+  // ── 소속별로 따로 보기 ──
+  //   운영진은 두 단체 기록을 함께 보시므로, 순위를 OB · YB 따로 가려 볼 수 있게 합니다.
+  //   (회원은 처음부터 제 단체 기록만 보이므로 단추가 나오지 않습니다)
+  const ORGS = ["OB", "YB", "GUEST"].filter(o => rows.some(r => r.org === o));
+  const ORG_BTN = { all: "전체", OB: "OB 동문회", YB: "YB 학생회", GUEST: "준회원" };
+  let orgPick = "all";
+  const rowsOf = () => orgPick === "all" ? rows : rows.filter(r => r.org === orgPick);
+  const orgSegHtml = () => ORGS.length < 2 ? "" :
+    '<span class="seg orgSeg">' + ["all", ...ORGS].map(o =>
+      `<a data-o="${o}"${o === orgPick ? ' class="on"' : ""}>${ORG_BTN[o]}</a>`).join("") + "</span>";
+  // 글쓰기 Top 10 에서 이름을 누르면 그분이 쓴 글을 펼쳐 봅니다
+  let whoOpen = "";
+
   if (!all.length) {
     box.innerHTML = '<div class="sempty">아직 쌓인 기록이 없습니다.<br>' +
       '홈페이지를 쓰실 때마다 하나씩 쌓입니다.</div>';
@@ -390,10 +418,12 @@ async function start() {
          <div class="stattop" id="statTop"></div>
        </div>
        <div class="legend"></div>
+       <div class="mylist" id="whoList"></div>
      </div>
      <div class="card2">
        <h3>많이 참여하신 분</h3>
        <p class="sub" id="rankSub">활동을 점수로 더한 순서입니다. 위 그래프에서 달·해를 누르면 그 기간만 봅니다.</p>
+       <div class="rankorg" id="rankOrg"></div>
        ${needSql(all) ? '<p class="notyet">「쪽 보기」는 아직 세지 않습니다 — ' +
           '운영진이 <b>auth/activity_every_view.sql</b> 을 한 번 실행하면 그때부터 쌓입니다.</p>' : ""}
        <div style="overflow-x:auto;"><table class="rank" id="rank"></table></div>
@@ -407,24 +437,85 @@ async function start() {
     const el = document.getElementById("statTop");
     if (!el) return;
     const one = kind !== "all" && kind !== "each" ? kind : "";
-    const list = rows
+    const canOpen = one === "post";          // 글쓰기 — 이름을 누르면 그분 글
+    const list = rowsOf()
       .map(r => ({ nm: r.name, org: r.org, me: r.is_me, n: one ? (r[one + "_n"] || 0) : Math.round(r.score) }))
       .filter(x => x.n > 0)
       .sort((x, y) => y.n - x.n)
       .slice(0, 10);
     const label = one ? (KNAME[one] || "") : "총점";
     const top = list.length ? list[0].n : 1;
-    el.innerHTML = `<h4>${label} Top 10</h4>` +
+    el.innerHTML = `<h4>${label} Top 10</h4>` + orgSegHtml() +
+      (canOpen && list.length ? '<p class="tophint">이름을 누르시면 그분이 쓴 글이 아래에 펼쳐집니다.</p>' : "") +
       (list.length
-        ? "<ol>" + list.map(x => `<li class="${x.me ? "me" : ""}">` +
-            `<span class="nm">${esc(x.nm)}${orgChip(x.org)}</span>` +
-            `<span class="bar"><i style="width:${Math.round(x.n / top * 100)}%;"></i></span>` +
-            `<span class="n">${x.n}</span></li>`).join("") + "</ol>"
+        ? "<ol>" + list.map(x => {
+            const cls = [x.me ? "me" : "", canOpen ? "open" : "",
+                         canOpen && whoOpen === x.nm ? "pick" : ""].filter(Boolean).join(" ");
+            const act = canOpen ? ` data-nm="${esc(x.nm)}" tabindex="0" role="button"` +
+                                  ` title="${esc(x.nm)} 님이 쓴 글 보기"` : "";
+            return `<li class="${cls}"${act}>` +
+              `<span class="nm">${esc(x.nm)}${orgChip(x.org)}</span>` +
+              `<span class="bar"><i style="width:${Math.round(x.n / top * 100)}%;"></i></span>` +
+              `<span class="n">${x.n}</span></li>`;
+          }).join("") + "</ol>"
         : '<div class="none">아직 기록이 없습니다.</div>') +
       '<p class="gift">분야별 <b>1등</b>에게는 <b>총회 때 선물을 드립니다.</b></p>';
+    if (canOpen) el.querySelectorAll("li[data-nm]").forEach(li => {
+      const go = () => openWho(li.dataset.nm);
+      li.addEventListener("click", go);
+      li.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+  }
+
+  // ── 그분이 쓴 글 ──
+  //   이 홈페이지에서 직접 쓰신 글만 봅니다 (밴드·페이스북에서 옮겨온 옛 글은 뺍니다).
+  //   보는 사람이 읽을 수 없는 글은 데이터베이스가 알아서 빼고 돌려줍니다.
+  const whoCache = {};
+  const postHome = (o) => o === "YB" ? "/YB" : o === "OB" ? "/OB" : "/" + org;
+  function closeWho() {
+    whoOpen = "";
+    const box = document.getElementById("whoList");
+    if (box) { box.classList.remove("on"); box.innerHTML = ""; }
+  }
+  async function openWho(nm) {
+    const box = document.getElementById("whoList");
+    if (!box || !nm) return;
+    if (whoOpen === nm) { closeWho(); drawTop(); return; }   // 같은 분을 다시 누르면 접습니다
+    whoOpen = nm;
+    drawTop();
+    box.classList.add("on");
+    box.innerHTML = '<div class="none">불러오는 중…</div>';
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!whoCache[nm]) {
+      const r = await sb.from("posts")
+        .select("id,title,org,category,created_at")
+        .eq("author_name", nm).not("author_id", "is", null)
+        .order("created_at", { ascending: false }).limit(200);
+      whoCache[nm] = r.error ? { err: r.error } : { rows: r.data || [] };
+    }
+    if (whoOpen !== nm) return;          // 그사이 다른 분을 누르셨으면 그대로 둡니다
+    const got = whoCache[nm];
+    box.innerHTML = `<h4>${esc(nm)} 님이 쓴 글 <span style="font-weight:400;color:#a8a291;">` +
+      `${got.rows ? got.rows.length + "건" : ""}</span>` +
+      '<button class="x" id="whoClose">닫기 ✕</button></h4>' +
+      (got.err
+        ? '<div class="none">불러오지 못했습니다: ' + esc(got.err.message) + "</div>"
+        : !got.rows.length
+        ? '<div class="none">보실 수 있는 글이 없습니다.</div>'
+        : "<ul>" + got.rows.map(p =>
+            `<li><a href="${postHome(p.org)}/post.html?id=${encodeURIComponent(p.id)}">` +
+            `<span class="tt">${esc(p.title)}</span>` +
+            `<span class="cg">${esc(CATN[p.category] || p.category || "")}</span>` +
+            `<span class="dt">${(p.created_at || "").slice(0, 10)}</span></a></li>`).join("") + "</ul>");
+    const x = document.getElementById("whoClose");
+    if (x) x.addEventListener("click", () => { closeWho(); drawTop(); });
   }
 
   function drawRank() {
+    const ro = document.getElementById("rankOrg");
+    if (ro) ro.innerHTML = orgSegHtml();
     const sub = document.getElementById("rankSub");
     if (sub) sub.textContent = pick
       ? `${mode === "month" ? pick.replace("-", ".") : pick + "년"} 기준으로 보고 계십니다. ` +
@@ -432,7 +523,7 @@ async function start() {
       : "활동을 점수로 더한 순서입니다. 위 그래프에서 달·해를 누르면 그 기간만 봅니다.";
 
     const use = kind === "all" ? null : kind;
-    const list = rows.slice().sort((x, y) =>
+    const list = rowsOf().slice().sort((x, y) =>
       use ? (y[use + "_n"] || 0) - (x[use + "_n"] || 0) : (y.score || 0) - (x.score || 0));
 
     document.getElementById("rank").innerHTML =
@@ -464,11 +555,21 @@ async function start() {
   }));
   kindSeg.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
     kind = a.dataset.v;
+    if (kind !== "post") closeWho();
     kindSeg.querySelectorAll("a").forEach(x => x.classList.toggle("on", x === a));
     draw();
     drawTop();
     drawRank();
   }));
+
+  // 소속 단추 — Top 10 과 아래 순위표가 함께 바뀝니다
+  document.getElementById("allStats").addEventListener("click", (e) => {
+    const a = e.target.closest(".orgSeg a[data-o]");
+    if (!a || a.dataset.o === orgPick) return;
+    orgPick = a.dataset.o;
+    drawTop();
+    drawRank();
+  });
 
   function bucket() {
     const g = new Map();
